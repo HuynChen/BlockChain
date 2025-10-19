@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es2016", // Đảm bảo target là phiên bản ES đủ mới
+    "module": "commonjs", // Module hệ thống cho Node.js
+    "outDir": "./dist", // Thư mục chứa code JavaScript sau khi build
+    "rootDir": "./src", // Thư mục chứa code TypeScript gốc
+    "strict": true,
+    "esModuleInterop": true
+  }
+}
