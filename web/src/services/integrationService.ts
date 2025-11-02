@@ -18,9 +18,11 @@ const sendToBackend = async (data: BackendShipmentData) => {
   console.log("IntegrationDev: Sending data to backend:", data);
   
   try {
-    
+    // Ensure shipmentId exists (backend requires it)
+    const shipmentId = (data as any).shipmentId || `SHIP-${Date.now().toString(36)}-${Math.random().toString(36).substring(2,8)}`;
+
     const requestBody = {
-      
+      shipmentId,
       productName: data.productName,
       quantity: data.quantity,
       manufacturingDate: data.manufacturingDate, 

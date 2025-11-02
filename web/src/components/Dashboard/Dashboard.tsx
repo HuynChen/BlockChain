@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/apiService';
 import { Package, Users, Activity, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
 import { MetricCard } from './MetricCard';
-import ProductForm from '../Products/ProductForm';
 
 type Shipment = {
     shipmentId: string;
@@ -65,11 +64,6 @@ export const Dashboard: React.FC = () => {
         <MetricCard title="Active Suppliers" value="156" change="+8 new this week" changeType="positive" icon={Users} color="green" />
         <MetricCard title="Blockchain Transactions" value="18,423" change="+125 today" changeType="positive" icon={Activity} color="purple" />
         <MetricCard title="Compliance Rate" value="98.7%" change="+0.3% improvement" changeType="positive" icon={Shield} color="yellow" />
-      </div>
-
-      {/* === Product form (thêm sản phẩm) === */}
-      <div className="mb-8">
-        <ProductForm />
       </div>
 
       {/* === Shipment Table (thay cho mock data) === */}
