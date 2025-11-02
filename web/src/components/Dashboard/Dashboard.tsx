@@ -2,14 +2,18 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/apiService';
 import { Package, Users, Activity, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
 import { MetricCard } from './MetricCard';
+import ProductForm from '../Products/ProductForm';
 
 type Shipment = {
-  _id: string;
-  code: string;
-  origin: string;
-  destination: string;
-  status: string;
-  updatedAt: string;
+    shipmentId: string;
+    productName: string;
+    quantity: number;
+    manufacturingDate: Date;
+    status: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
+    transactionHash: string;
+    producerAddress: string;
+    createdAt: Date; 
+    updatedAt: Date; 
 };
 
 export const Dashboard: React.FC = () => {
@@ -21,8 +25,19 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get('/shipments'); // GET http://localhost:8000/api/shipments
-        setShipments(data || []);
+        const response = await api.get('/shipments');
+        let shipmentsData: any = [];
+        if (Array.isArray(response.data)) {
+          shipmentsData = response.data;
+        } else if (Array.isArray(response.data?.shipments)) {
+          shipmentsData = response.data.shipments;
+        } else if (Array.isArray(response.data?.data)) {
+          shipmentsData = response.data.data;
+        } else {
+          shipmentsData = response.data?.shipmentsList || response.data?.items || [];
+        }
+
+        setShipments(shipmentsData || []);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Không tải được dữ liệu lô hàng');
       } finally {
@@ -52,6 +67,11 @@ export const Dashboard: React.FC = () => {
         <MetricCard title="Compliance Rate" value="98.7%" change="+0.3% improvement" changeType="positive" icon={Shield} color="yellow" />
       </div>
 
+      {/* === Product form (thêm sản phẩm) === */}
+      <div className="mb-8">
+        <ProductForm />
+      </div>
+
       {/* === Shipment Table (thay cho mock data) === */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Danh sách lô hàng</h3>
@@ -62,26 +82,26 @@ export const Dashboard: React.FC = () => {
             <table className="w-full text-sm text-gray-700">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left py-3 px-4">Mã lô hàng</th>
-                  <th className="text-left py-3 px-4">Xuất xứ</th>
-                  <th className="text-left py-3 px-4">Điểm đến</th>
+                  <th className="text-left py-3 px-4">id</th>
+                  <th className="text-left py-3 px-4">Tên sản phẩm</th>
                   <th className="text-left py-3 px-4">Trạng thái</th>
                   <th className="text-left py-3 px-4">Cập nhật</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {shipments.map((s) => (
-                  <tr key={s._id}>
-                    <td className="py-3 px-4 font-medium">{s.code}</td>
-                    <td className="py-3 px-4">{s.origin}</td>
-                    <td className="py-3 px-4">{s.destination}</td>
+                  <tr key={s.shipmentId || s.transactionHash}>
+                    <td className="py-3 px-4 font-medium">{s.productName}</td>
+                    <td className="py-3 px-4">{s.status}</td>
                     <td className="py-3 px-4">
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          s.status === 'Delivered'
+                          s.status === 'CREATED'
                             ? 'bg-green-100 text-green-800'
-                            : s.status === 'In Transit'
+                            : s.status === 'SHIPPED'
                             ? 'bg-yellow-100 text-yellow-800'
+                            : s.status === 'FOR_SALE'
+                            ? 'bg-red-100 text-yellow-800'
                             : 'bg-gray-100 text-gray-600'
                         }`}
                       >

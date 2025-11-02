@@ -10,6 +10,16 @@ import { BlockchainLog } from './components/Transactions/BlockchainLog';
 function App() {
   const [isAuthed, setIsAuthed] = useState<boolean>(!!localStorage.getItem("token"));
   const [activeTab, setActiveTab] = useState('dashboard');
+  // load saved user (from Login) if present
+  const savedUser = (() => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [user, setUser] = useState<any>(savedUser);
   
   if (!isAuthed) {
     return (
@@ -17,6 +27,13 @@ function App() {
         onSuccess={() => {
           setIsAuthed(true);
           setActiveTab("dashboard");
+          // refresh user from localStorage (Login writes it)
+          try {
+            const raw = localStorage.getItem('user');
+            setUser(raw ? JSON.parse(raw) : null);
+          } catch {
+            setUser(null);
+          }
         }}
       />
     );
@@ -71,11 +88,19 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    // ensure localStorage cleared and update auth state
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsAuthed(false);
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header currentUser="Alex Johnson" />
+  <Header currentUser={user?.email || 'Người dùng'} onLogout={handleLogout} />
         <main className="flex-1 overflow-y-auto">
           {renderActiveComponent()}
         </main>

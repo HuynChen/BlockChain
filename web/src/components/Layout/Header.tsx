@@ -3,9 +3,10 @@ import { Bell, Search, User, Shield, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   currentUser: string;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentUser }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -56,7 +57,15 @@ export const Header: React.FC<HeaderProps> = ({ currentUser }) => {
                     <User className="h-4 w-4" />
                     <span>Profile</span>
                   </button>
-                  <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <button
+                    onClick={() => {
+                      // Clear token in localStorage and call optional callback to update app state
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      if (onLogout) onLogout();
+                    }}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
                     <LogOut className="h-4 w-4" />
                     <span>Sign out</span>
                   </button>
