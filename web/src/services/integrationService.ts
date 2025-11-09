@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // API endpoint
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
+  
 interface BackendShipmentData {
 
   productName: string;
@@ -18,7 +18,7 @@ const sendToBackend = async (data: BackendShipmentData) => {
   
   try {
     // Ensure shipmentId exists (backend requires it)
-    const shipmentId = (data as any).shipmentId || `SHIP-${Date.now().toString(36)}-${Math.random().toString(36).substring(2,8)}`;
+    const shipmentId = (data as any).shipmentId || `SHP-${Date.now().toString(36)}-${Math.random().toString(36).substring(2,8)}`;
 
     const requestBody = {
       shipmentId,
@@ -33,7 +33,7 @@ const sendToBackend = async (data: BackendShipmentData) => {
     console.log("IntegrationDev: Request Body:", requestBody);
 
     const response = await axios.post(
-      API_BASE_URL,
+      `${API_BASE_URL}/shipments`,
       requestBody,
       {
         headers: {

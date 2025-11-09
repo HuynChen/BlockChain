@@ -1,49 +1,43 @@
 import React from 'react';
+import { Shipment } from '../../types'; 
 
-export interface Shipment {
-  productName: string;
-  quantity: string;
-  timestamp: string;
-  txHash: string;
-}
-
-interface ShipmentListProps {
-  shipments: Shipment[];
+export type ShipmentListProps = {
   title?: string;
-  className?: string;
-}
+  shipments: Shipment[];
+};
 
-export const ShipmentList: React.FC<ShipmentListProps> = ({ 
-  shipments, 
-  title = "Danh Sách Lô Hàng",
-  className = "" 
-}) => {
-  if (shipments.length === 0) return null;
+export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments }) => {
+  const formatVN = (d: string | number | Date) => new Date(d).toLocaleString('vi-VN');
 
   return (
-    <div className={`mt-6 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-700 mb-3">{title}</h3>
-      <div className="space-y-3">
-        {shipments.map((shipment, index) => (
-          <div 
-            key={shipment.txHash} 
-            className="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-medium text-gray-900">{shipment.productName}</h4>
-                <p className="text-sm text-gray-600">
-                  Số lượng: {shipment.quantity} | Thời gian: {shipment.timestamp}
-                </p>
-              </div>
-              <span className="text-xs text-gray-500">#{index + 1}</span>
-            </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Transaction: <code className="bg-gray-100 px-1">{shipment.txHash}</code>
-            </p>
-          </div>
-        ))}
-      </div>
+    <div className="mt-4">
+      {title && <h3 className="font-semibold mb-2">{title}</h3>}
+      {shipments.length === 0 ? (
+        <div className="text-gray-500 text-sm">Chưa có dữ liệu.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-gray-700">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left py-2 px-3">ID</th>
+                <th className="text-left py-2 px-3">Tên</th>
+                <th className="text-left py-2 px-3">Trạng thái</th>
+                <th className="text-left py-2 px-3">Cập nhật</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {shipments.map((s) => (
+                <tr key={s.shipmentId || s.transactionHash}>
+                  <td className="py-2 px-3">{s.shipmentId || s.transactionHash}</td>
+                  <td className="py-2 px-3">{s.productName}</td>
+                  <td className="py-2 px-3">{s.status}</td>
+                  <td className="py-2 px-3">{formatVN(s.updatedAt || s.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

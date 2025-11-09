@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">SupplyTrust</h1>
-            <p className="text-xs text-gray-500">Blockchain Supply Chain</p>
+            <p className="text-xs text-gray-500">Blockchain Quản lý chuỗi cung ứng</p>
           </div>
         </div>
 
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search products, suppliers, transactions..."
+              placeholder="Tìm sản phẩm, nhà cung cấp, giao dịch..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
           <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{currentUser}</p>
-              <p className="text-xs text-gray-500">Supply Chain Manager</p>
+              <p className="text-xs text-gray-500">Quản lý chuỗi cung ứng</p>
             </div>
             <div className="relative group">
               <button className="bg-blue-100 p-2 rounded-full hover:bg-blue-200 transition-colors">
@@ -119,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
                 <div className="py-2">
                   <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     <User className="h-4 w-4" />
-                    <span>Profile</span>
+                    <span>Hồ sơ</span>
                   </button>
                   <button
                     onClick={() => {
@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
                     className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Sign out</span>
+                    <span>Đăng xuất</span>
                   </button>
                 </div>
               </div>

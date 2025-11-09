@@ -1,18 +1,19 @@
+// ProductTracking.tsx
 import React, { useEffect, useState } from 'react';
 import api from '../../services/apiService';
 import { CreateShipmentForm } from './CreateShipmentForm';
-import { Search, Filter} from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
+import { Shipment } from '../../types'; 
 
-type Shipment = {
-  shipmentId: string;
-  productName: string;
-  quantity: number;
-  manufacturingDate: string | Date;
-  status: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
-  transactionHash: string;
-  producerAddress: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+const upsertShipment = (list: Shipment[], s: Shipment) => {
+  const id = s.shipmentId || s.transactionHash;       
+  const i = list.findIndex(x => (x.shipmentId || x.transactionHash) === id);
+  if (i >= 0) {
+    const copy = [...list];
+    copy[i] = { ...copy[i], ...s };
+    return copy.sort((a,b)=> +new Date(b.updatedAt) - +new Date(a.updatedAt));
+  }
+  return [{ ...s }, ...list].sort((a,b)=> +new Date(b.updatedAt) - +new Date(a.updatedAt));
 };
 
 export const ProductTracking: React.FC = () => {
@@ -26,7 +27,7 @@ export const ProductTracking: React.FC = () => {
     (async () => {
       try {
         const response = await api.get('/shipments');
-        let shipmentsData: any[] = [];
+        let shipmentsData: Shipment[] = [];
         if (Array.isArray(response.data)) {
           shipmentsData = response.data;
         } else if (Array.isArray(response.data?.shipments)) {
@@ -45,8 +46,31 @@ export const ProductTracking: React.FC = () => {
     })();
   }, []);
 
-  const formatVN = (d: string | number | Date) =>
-    new Date(d).toLocaleString('vi-VN');
+  const formatVN = (d: string | number | Date) => new Date(d).toLocaleString('vi-VN');
+
+    const parseNum = (id?: string) => {
+    const m = /^SHP-(\d+)$/.exec(id ?? '');
+    return m ? parseInt(m[1], 10) : NaN;
+  };
+
+  const getNextShipmentId = () => {
+    const max = shipments.reduce((mx, s) => {
+      const n = parseNum(s.shipmentId);
+      return Number.isFinite(n) ? Math.max(mx, n) : mx;
+    }, 1000);
+    return `SHP-${max + 1}`;
+  };
+
+  const handleCreated = (created: Shipment) => {
+    setShipments(prev => upsertShipment(prev, created));
+  };
+
+  const filteredShipments = shipments.filter((s) => {
+    const matchesSearch = s.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (s.shipmentId || s.transactionHash)?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) return <div className="p-6">Đang tải dữ liệu từ blockchain...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
@@ -54,13 +78,15 @@ export const ProductTracking: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Tracking</h2>
-        <p className="text-gray-600">Monitor products throughout the supply chain with blockchain verification</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Theo dõi sản phẩm</h2>
+        <p className="text-gray-600">Giám sát sản phẩm xuyên suốt chuỗi cung ứng với xác minh blockchain</p>
       </div>
 
       {/* Form tạo lô hàng */}
       <div className="mb-6">
-        <CreateShipmentForm />
+        <CreateShipmentForm onCreated={handleCreated} 
+        getNextShipmentId={getNextShipmentId} 
+        />
       </div>
 
       {/* Search & Filter */}
@@ -88,10 +114,11 @@ export const ProductTracking: React.FC = () => {
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
-                <option value="verified">Verified</option>
-                <option value="in-transit">In Transit</option>
-                <option value="processing">Processing</option>
-                <option value="delivered">Delivered</option>
+                <option value="CREATED">Created</option>
+                <option value="SHIPPED">Shipped</option>
+                <option value="RECEIVED">Received</option>
+                <option value="AUDITED">Audited</option>
+                <option value="FOR_SALE">For Sale</option>
               </select>
             </div>
           </div>
@@ -101,7 +128,7 @@ export const ProductTracking: React.FC = () => {
       {/* Danh sách lô hàng */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Danh sách lô hàng</h3>
-        {shipments.length === 0 ? (
+        {filteredShipments.length === 0 ? (
           <div className="text-gray-500">Chưa có lô hàng.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -115,7 +142,7 @@ export const ProductTracking: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {shipments.map((s) => (
+                {filteredShipments.map((s) => (
                   <tr key={s.shipmentId || s.transactionHash}>
                     <td className="py-3 px-4 font-medium">{s.shipmentId || s.transactionHash}</td>
                     <td className="py-3 px-4">{s.productName}</td>
@@ -142,6 +169,6 @@ export const ProductTracking: React.FC = () => {
           </div>
         )}
       </div>
-  </div>
+    </div>
   );
 };

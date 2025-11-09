@@ -69,6 +69,15 @@ export const SupplierManagement: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+  // Thêm nhãn tiếng Việt cho trạng thái
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'verified': return 'Đã xác minh';
+      case 'pending': return 'Đang chờ';
+      case 'flagged': return 'Cảnh báo';
+      default: return 'Không xác định';
+    }
+  };
 
   const getTrustScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600 bg-green-100';
@@ -80,8 +89,8 @@ export const SupplierManagement: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Supplier Management</h2>
-        <p className="text-gray-600">Manage and verify suppliers across your supply chain network</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Quản lý nhà cung cấp</h2>
+        <p className="text-gray-600">Quản lý và xác minh nhà cung cấp trong mạng lưới chuỗi cung ứng</p>
       </div>
 
       {/* Search and Filters */}
@@ -92,7 +101,7 @@ export const SupplierManagement: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search suppliers by name or location..."
+                placeholder="Tìm nhà cung cấp theo tên hoặc địa điểm..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -108,15 +117,15 @@ export const SupplierManagement: React.FC = () => {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Status</option>
-                <option value="verified">Verified</option>
-                <option value="pending">Pending</option>
-                <option value="flagged">Flagged</option>
+                <option value="all">Tất cả trạng thái</option>
+                <option value="verified">Đã xác minh</option>
+                <option value="pending">Đang chờ</option>
+                <option value="flagged">Cảnh báo</option>
               </select>
             </div>
             
             <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              Add Supplier
+              Thêm nhà cung cấp
             </button>
           </div>
         </div>
@@ -143,7 +152,7 @@ export const SupplierManagement: React.FC = () => {
                       </div>
                     </div>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(supplier.status)}`}>
-                      {supplier.status}
+                      {getStatusLabel(supplier.status)}
                     </span>
                   </div>
                 </div>
@@ -155,7 +164,7 @@ export const SupplierManagement: React.FC = () => {
                     <Star className="h-4 w-4" />
                   </div>
                   <p className="text-lg font-bold text-gray-900">{supplier.trustScore}</p>
-                  <p className="text-xs text-gray-500">Trust Score</p>
+                  <p className="text-xs text-gray-500">Điểm tin cậy</p>
                 </div>
                 
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -163,14 +172,14 @@ export const SupplierManagement: React.FC = () => {
                     <Users className="h-4 w-4" />
                   </div>
                   <p className="text-lg font-bold text-gray-900">{supplier.productsSupplied.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500">Products</p>
+                  <p className="text-xs text-gray-500">Sản phẩm</p>
                 </div>
               </div>
 
               <div className="mb-4">
                 <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                   <Calendar className="h-4 w-4" />
-                  <span>Joined {new Date(supplier.joinDate).toLocaleDateString()}</span>
+                  <span>Ngày tham gia: {new Date(supplier.joinDate).toLocaleDateString()}</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1">
@@ -182,7 +191,7 @@ export const SupplierManagement: React.FC = () => {
                   ))}
                   {supplier.certifications.length > 2 && (
                     <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                      +{supplier.certifications.length - 2} more
+                      +{supplier.certifications.length - 2} thêm
                     </span>
                   )}
                 </div>
@@ -193,13 +202,13 @@ export const SupplierManagement: React.FC = () => {
                   onClick={() => setSelectedSupplier(supplier)}
                   className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
                 >
-                  View Details
+                  Xem chi tiết
                 </button>
                 
                 {supplier.status === 'pending' && (
                   <div className="flex items-center space-x-1 text-yellow-600">
                     <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm">Verification Needed</span>
+                    <span className="text-sm">Cần xác minh</span>
                   </div>
                 )}
               </div>
@@ -242,7 +251,7 @@ export const SupplierManagement: React.FC = () => {
                     <Star className="h-6 w-6" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{selectedSupplier.trustScore}</p>
-                  <p className="text-sm text-gray-600">Trust Score</p>
+                  <p className="text-sm text-gray-600">Điểm tin cậy</p>
                 </div>
                 
                 <div className="text-center p-4 bg-blue-50 rounded-xl">
@@ -250,7 +259,7 @@ export const SupplierManagement: React.FC = () => {
                     <Users className="h-6 w-6" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{selectedSupplier.productsSupplied.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">Products Supplied</p>
+                  <p className="text-sm text-gray-600">Sản phẩm đã cung cấp</p>
                 </div>
                 
                 <div className="text-center p-4 bg-purple-50 rounded-xl">
@@ -258,7 +267,7 @@ export const SupplierManagement: React.FC = () => {
                     <Award className="h-6 w-6" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{selectedSupplier.certifications.length}</p>
-                  <p className="text-sm text-gray-600">Certifications</p>
+                  <p className="text-sm text-gray-600">Chứng nhận</p>
                 </div>
               </div>
 
@@ -275,25 +284,25 @@ export const SupplierManagement: React.FC = () => {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Supplier Information</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Thông tin nhà cung cấp</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="font-medium">Supplier ID:</span> {selectedSupplier.id}</div>
-                  <div><span className="font-medium">Join Date:</span> {new Date(selectedSupplier.joinDate).toLocaleDateString()}</div>
-                  <div><span className="font-medium">Status:</span> 
+                  <div><span className="font-medium">Mã nhà cung cấp:</span> {selectedSupplier.id}</div>
+                  <div><span className="font-medium">Ngày tham gia:</span> {new Date(selectedSupplier.joinDate).toLocaleDateString()}</div>
+                  <div><span className="font-medium">Trạng thái:</span> 
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedSupplier.status)}`}>
-                      {selectedSupplier.status}
+                      {getStatusLabel(selectedSupplier.status)}
                     </span>
                   </div>
-                  <div><span className="font-medium">Location:</span> {selectedSupplier.location}</div>
+                  <div><span className="font-medium">Địa điểm:</span> {selectedSupplier.location}</div>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end space-x-3">
                 <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  Contact Supplier
+                  Liên hệ nhà cung cấp
                 </button>
                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Manage Products
+                  Quản lý sản phẩm
                 </button>
               </div>
             </div>
