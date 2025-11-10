@@ -4,7 +4,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
   
 interface BackendShipmentData {
-
+  shipmentId?: string;
   productName: string;
   quantity: number;
   manufacturingDate: string; 

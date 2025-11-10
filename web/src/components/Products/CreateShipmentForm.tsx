@@ -95,7 +95,11 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
         console.log('TX HASH:', hash);
 
       setCurrentStep('backend');
+
+      const shipmentId = getNextShipmentId();
+
       const backendRes = await IntegrationDev.sendToBackend({
+        shipmentId,
         productName,
         quantity: quantityNum,
         manufacturingDate: new Date(manufacturingDate).toISOString(),
@@ -103,18 +107,17 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
         producerAddress,
       });
 
-      const fallbackId = getNextShipmentId(); 
-      const shipmentId =
+      const finalId =
         backendRes?.data?.shipmentId && /^SHP-\d+$/.test(backendRes.data.shipmentId)
           ? backendRes.data.shipmentId
-          : fallbackId;
+          : shipmentId;
 
       const now = new Date().toISOString();
       const createdShipment: Shipment = {
-        shipmentId,
+        shipmentId: finalId,
         productName,
         quantity: quantityNum,
-        manufacturingDate: manufacturingDate,
+        manufacturingDate,
         status: 'CREATED',
         transactionHash: hash,
         producerAddress,
@@ -123,8 +126,7 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
       };
 
       onCreated?.(createdShipment);
-
-      setRecentShipments((prev) => [createdShipment, ...prev].slice(0, 5));
+      setRecentShipments(prev => [createdShipment, ...prev].slice(0, 5));
       setProductName('');
       setQuantity('');
       setManufacturingDate('');
