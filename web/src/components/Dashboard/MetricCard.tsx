@@ -1,12 +1,12 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
   value: string | number;
   change: string;
-  changeType: 'positive' | 'negative' | 'neutral';
-  icon: NewType;
+  changeType: 'tích cực' | 'tiêu cực' | 'trung lập';
+  icon: LucideIcon;
   color: 'blue' | 'green' | 'yellow' | 'purple';
 }
 
@@ -50,9 +50,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           <p className="text-sm font-medium text-gray-600 mb-2">{title}</p>
           <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
           <p className={`text-sm ${
-            changeType === 'positive' 
+            changeType === 'tích cực' 
               ? 'text-green-600' 
-              : changeType === 'negative' 
+              : changeType === 'tiêu cực' 
                 ? 'text-red-600' 
                 : 'text-gray-500'
           }`}>

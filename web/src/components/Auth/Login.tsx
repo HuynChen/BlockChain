@@ -16,8 +16,9 @@ export default function Login({ onSuccess }: Props) {
     try {
       const { data } = await api.post("/users/login", { email, password }); 
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+  localStorage.setItem("token", data.token);
+  const storedUser = { ...(data.user || {}), email };
+  localStorage.setItem("user", JSON.stringify(storedUser));
       onSuccess();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Đăng nhập thất bại");

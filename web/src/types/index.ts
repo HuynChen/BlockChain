@@ -1,18 +1,14 @@
-export interface Product {
-  id: string;
-  name: string;
-  category: string;
-  origin: string;
-  currentLocation: string;
-  status: 'in-transit' | 'delivered' | 'processing' | 'verified';
-  supplier: string;
-  manufacturer: string;
-  timestamp: string;
-  blockchainHash: string;
-  certifications: string[];
-  temperature?: number;
-  humidity?: number;
-}
+export type Shipment = {
+  shipmentId: string;
+  productName: string;
+  quantity: number;
+  manufacturingDate: string | Date;
+  status: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
+  transactionHash: string;
+  producerAddress: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
 
 export interface Supplier {
   id: string;

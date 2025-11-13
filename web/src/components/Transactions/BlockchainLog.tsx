@@ -106,8 +106,8 @@ export const BlockchainLog: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Blockchain Transaction Log</h2>
-        <p className="text-gray-600">Immutable record of all supply chain transactions on the blockchain</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Nhật ký giao dịch blockchain</h2>
+        <p className="text-gray-600">Bản ghi bất biến mọi giao dịch chuỗi cung ứng trên blockchain</p>
       </div>
 
       {/* Search and Filters */}
@@ -118,7 +118,7 @@ export const BlockchainLog: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search by hash, product ID, or party..."
+                placeholder="Tìm theo hash, mã sản phẩm hoặc đối tác..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -134,10 +134,10 @@ export const BlockchainLog: React.FC = () => {
                 onChange={(e) => setFilterType(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Types</option>
-                <option value="transfer">Transfer</option>
-                <option value="verification">Verification</option>
-                <option value="certification">Certification</option>
+                <option value="all">Tất cả loại</option>
+                <option value="transfer">Chuyển giao</option>
+                <option value="verification">Xác minh</option>
+                <option value="certification">Chứng nhận</option>
               </select>
             </div>
             
@@ -146,10 +146,10 @@ export const BlockchainLog: React.FC = () => {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="failed">Failed</option>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="confirmed">Đã xác nhận</option>
+              <option value="pending">Đang chờ</option>
+              <option value="failed">Thất bại</option>
             </select>
           </div>
         </div>
@@ -161,13 +161,13 @@ export const BlockchainLog: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Transaction</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Type</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">From → To</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Product ID</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Status</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Time</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Gas Used</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Giao dịch</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Loại</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Từ → Đến</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Mã sản phẩm</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Trạng thái</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Thời gian</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-900">Gas tiêu thụ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -198,7 +198,7 @@ export const BlockchainLog: React.FC = () => {
                     
                     <td className="py-4 px-6">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(transaction.type)}`}>
-                        {transaction.type}
+                        {getTypeLabel(transaction.type)}
                       </span>
                     </td>
                     
@@ -216,8 +216,8 @@ export const BlockchainLog: React.FC = () => {
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
                         <StatusIcon className={`h-4 w-4 ${getStatusColor(transaction.status).split(' ')[0]}`} />
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(transaction.status)}`}>
-                          {transaction.status}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
+                          {getStatusLabel(transaction.status)}
                         </span>
                       </div>
                     </td>
@@ -244,7 +244,7 @@ export const BlockchainLog: React.FC = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Transaction Details</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Chi tiết giao dịch</h2>
                   <p className="text-gray-600">{selectedTransaction.id}</p>
                 </div>
                 <button
@@ -256,24 +256,24 @@ export const BlockchainLog: React.FC = () => {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Blockchain Information</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">Thông tin blockchain</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Transaction Hash:</span>
+                    <span className="font-medium text-gray-700">Hash giao dịch:</span>
                     <code className="text-sm bg-white px-2 py-1 rounded border">{selectedTransaction.blockchainHash}</code>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Block Timestamp:</span>
+                    <span className="font-medium text-gray-700">Thời gian khối:</span>
                     <span className="text-sm">{new Date(selectedTransaction.timestamp).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Gas Used:</span>
+                    <span className="font-medium text-gray-700">Gas tiêu thụ:</span>
                     <span className="text-sm">{selectedTransaction.gasUsed.toLocaleString()} gas</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-700">Status:</span>
+                    <span className="font-medium text-gray-700">Trạng thái:</span>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedTransaction.status)}`}>
-                      {selectedTransaction.status}
+                      {getStatusLabel(selectedTransaction.status)}
                     </span>
                   </div>
                 </div>
@@ -281,35 +281,35 @@ export const BlockchainLog: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Transaction Details</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4">Chi tiết giao dịch</h3>
                   <div className="space-y-3 text-sm">
-                    <div><span className="font-medium">Type:</span> 
+                    <div><span className="font-medium">Loại:</span> 
                       <span className={`ml-2 inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedTransaction.type)}`}>
-                        {selectedTransaction.type}
+                        {getTypeLabel(selectedTransaction.type)}
                       </span>
                     </div>
-                    <div><span className="font-medium">Product ID:</span> <span className="font-mono text-blue-600">{selectedTransaction.productId}</span></div>
-                    <div><span className="font-medium">From:</span> {selectedTransaction.from}</div>
-                    <div><span className="font-medium">To:</span> {selectedTransaction.to}</div>
+                    <div><span className="font-medium">Mã sản phẩm:</span> <span className="font-mono text-blue-600">{selectedTransaction.productId}</span></div>
+                    <div><span className="font-medium">Từ:</span> {selectedTransaction.from}</div>
+                    <div><span className="font-medium">Đến:</span> {selectedTransaction.to}</div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Network Information</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4">Thông tin mạng</h3>
                   <div className="space-y-3 text-sm">
-                    <div><span className="font-medium">Network:</span> Ethereum Mainnet</div>
-                    <div><span className="font-medium">Confirmations:</span> {selectedTransaction.status === 'confirmed' ? '12+' : '0'}</div>
-                    <div><span className="font-medium">Gas Price:</span> 20 Gwei</div>
-                    <div><span className="font-medium">Transaction Fee:</span> 0.0004 ETH</div>
+                    <div><span className="font-medium">Mạng:</span> Ethereum Mainnet</div>
+                    <div><span className="font-medium">Xác nhận:</span> {selectedTransaction.status === 'confirmed' ? '12+' : '0'}</div>
+                    <div><span className="font-medium">Giá gas:</span> 20 Gwei</div>
+                    <div><span className="font-medium">Phí giao dịch:</span> 0.0004 ETH</div>
                   </div>
                 </div>
               </div>
 
               <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Verification</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Xác minh</h3>
                 <p className="text-sm text-gray-600">
-                  This transaction has been cryptographically verified and recorded on the blockchain. 
-                  The immutable nature of blockchain technology ensures this record cannot be altered or tampered with.
+                  Giao dịch này đã được xác minh bằng mật mã và ghi nhận trên blockchain.
+                  Tính bất biến của công nghệ blockchain đảm bảo bản ghi không thể bị sửa đổi hoặc giả mạo.
                 </p>
               </div>
             </div>
@@ -318,4 +318,21 @@ export const BlockchainLog: React.FC = () => {
       )}
     </div>
   );
+};
+
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case 'transfer': return 'Chuyển giao';
+    case 'verification': return 'Xác minh';
+    case 'certification': return 'Chứng nhận';
+    default: return type;
+  }
+};
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'confirmed': return 'Đã xác nhận';
+    case 'pending': return 'Đang chờ';
+    case 'failed': return 'Thất bại';
+    default: return status;
+  }
 };
