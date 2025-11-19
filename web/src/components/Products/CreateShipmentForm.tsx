@@ -1,52 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { callCreateShipment } from '../../services/blockchainService';
 import { IntegrationDev } from '../../services/integrationService';
 import { ShipmentList } from './ShipmentList';
 import { Shipment } from '../../types'; 
+import { Loader2, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
 
-// ===== Spinner nhỏ =====
-const Spinner = () => (
-  <div className="inline-block animate-spin h-4 w-4 border-[2px] border-current border-t-transparent text-blue-600 rounded-full" />
-);
-
-// ===== Steps =====
 type Step = 'init' | 'connecting' | 'signing' | 'mining' | 'backend' | 'done';
+
 const stepMessages: Record<Step, string> = {
   init: '',
-  connecting: 'Đang kết nối MetaMask...',
-  signing: 'Vui lòng ký giao dịch trên MetaMask...',
-  mining: 'Đang chờ xác nhận giao dịch...',
-  backend: 'Đang gửi dữ liệu lên hệ thống...',
+  connecting: 'Đang kết nối ví MetaMask...',
+  signing: 'Vui lòng xác nhận giao dịch trên ví...',
+  mining: 'Đang chờ Blockchain xác nhận (Khoảng 10-15s)...',
+  backend: 'Đang lấy ID thật và đồng bộ...',
   done: 'Hoàn tất!',
 };
 
-// ===== Retry helper =====
-const withRetry = async <T,>(
-  fn: () => Promise<T>,
-  retries = 3, delay = 800): Promise<T> => {
-  let lastErr;
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      await new Promise((r) => setTimeout(r, delay * Math.pow(2, i)));
-    }
-  }
-  throw lastErr;
-};
-
-// ===== Props =====
 type CreateShipmentFormProps = {
   onCreated?: (shipment: Shipment) => void;
-  getNextShipmentId: () => string;
+  getNextShipmentId: () => string; 
 };
 
-export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreated, getNextShipmentId }) => {
+export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreated }) => {
   const [productName, setProductName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [manufacturingDate, setManufacturingDate] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>('init');
   const [error, setError] = useState('');
@@ -55,6 +35,7 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!productName || !quantity || !manufacturingDate) {
       setError('Vui lòng nhập đủ thông tin.');
       return;
@@ -62,64 +43,74 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
 
     const quantityNum = parseInt(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      setError('Số lượng không hợp lệ.');
+      setError('Số lượng phải là số dương.');
       return;
     }
 
     setIsLoading(true);
     setError('');
+    setTxHash('');
     setCurrentStep('connecting');
 
     try {
-      if (!(window as any).ethereum) {
-        throw new Error('MetaMask chưa được cài đặt!');
-      }
-      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      if (!window.ethereum) throw new Error('MetaMask chưa được cài đặt!');
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const producerAddress = await signer.getAddress();
 
-      setCurrentStep('signing');
-      setCurrentStep('mining');
+      setCurrentStep('signing'); 
+      const txResponse = await callCreateShipment({
+        productName,
+        quantity: quantityNum,
+        manufactureTimestamp: Math.floor(new Date(manufacturingDate).getTime() / 1000),
+      });
 
-      const tx = await withRetry(() =>
-        callCreateShipment({
-          productName,
-          quantity: quantityNum,
-          manufactureTimestamp: Math.floor(new Date(manufacturingDate).getTime() / 1000),
-        })
-      );
+      setTxHash(txResponse.hash);
+      setCurrentStep('mining'); 
+      
+      const receipt = await txResponse.wait(); 
+      
+      if (!receipt || receipt.status !== 1) {
+        throw new Error('Giao dịch bị thất bại trên Blockchain.');
+      }
 
-      const hash = tx?.hash || tx?.transactionHash || (typeof tx === 'string' ? tx : '');
-        if (!hash) throw new Error('Giao dịch chưa được broadcast (không có transaction hash).');
-        setTxHash(hash);
-        console.log('TX HASH:', hash);
+      let realBlockchainId = "";
+      
+      try {
+          for (const log of receipt.logs) {
+              if (log.topics && log.topics[1]) {
+                  const idBigInt = BigInt(log.topics[1]);
+                  realBlockchainId = idBigInt.toString();
+                  console.log("FOUND REAL ID:", realBlockchainId);
+                  break; 
+              }
+          }
+      } catch (e) {
+          console.error("Không đọc được ID từ logs:", e);
+      }
+
+      const finalId = realBlockchainId || `SHP-${Date.now()}`;
 
       setCurrentStep('backend');
 
-      const shipmentId = getNextShipmentId();
-
-      const backendRes = await IntegrationDev.sendToBackend({
-        shipmentId,
+      await IntegrationDev.sendToBackend({
+        shipmentId: finalId,
         productName,
         quantity: quantityNum,
         manufacturingDate: new Date(manufacturingDate).toISOString(),
-        transactionHash: hash,
+        transactionHash: txResponse.hash,
         producerAddress,
       });
-
-      const finalId =
-        backendRes?.data?.shipmentId && /^SHP-\d+$/.test(backendRes.data.shipmentId)
-          ? backendRes.data.shipmentId
-          : shipmentId;
 
       const now = new Date().toISOString();
       const createdShipment: Shipment = {
         shipmentId: finalId,
         productName,
         quantity: quantityNum,
-        manufacturingDate,
+        manufacturingDate, 
         status: 'CREATED',
-        transactionHash: hash,
+        transactionHash: txResponse.hash,
         producerAddress,
         createdAt: now,
         updatedAt: now,
@@ -127,12 +118,17 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
 
       onCreated?.(createdShipment);
       setRecentShipments(prev => [createdShipment, ...prev].slice(0, 5));
+      
       setProductName('');
       setQuantity('');
       setManufacturingDate('');
       setCurrentStep('done');
+
     } catch (err: any) {
-      setError(err?.message || 'Gặp lỗi khi tạo lô hàng.');
+      console.error(err);
+      let msg = err.message || 'Gặp lỗi khi tạo lô hàng.';
+      if (msg.includes('user rejected')) msg = 'Bạn đã từ chối xác nhận trên ví.';
+      setError(msg);
       setCurrentStep('init');
     } finally {
       setIsLoading(false);
@@ -140,71 +136,95 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Tạo Lô Hàng Mới</h2>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <h2 className="text-xl font-bold mb-4 text-gray-900">Tạo Lô Hàng Mới</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Tên sản phẩm"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          disabled={isLoading}
-          className="w-full px-3 py-2 border rounded-lg"
-        />
-        <input
-          type="number"
-          placeholder="Số lượng"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          disabled={isLoading}
-          className="w-full px-3 py-2 border rounded-lg"
-        />
-        <input
-          type="datetime-local"
-          value={manufacturingDate}
-          onChange={(e) => setManufacturingDate(e.target.value)}
-          disabled={isLoading}
-          className="w-full px-3 py-2 border rounded-lg"
-        />
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tên sản phẩm</label>
+            <input
+            type="text"
+            placeholder="Ví dụ: iPhone 15..."
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            disabled={isLoading}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng</label>
+                <input
+                type="number"
+                placeholder="100"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sản xuất</label>
+                <input
+                type="datetime-local"
+                value={manufacturingDate}
+                onChange={(e) => setManufacturingDate(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+        </div>
+
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-2 text-white rounded-lg ${
-            isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+          className={`w-full py-2.5 text-white font-medium rounded-lg transition-all flex justify-center items-center space-x-2 ${
+            isLoading 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
           }`}
         >
-          {isLoading ? 'Đang xử lý...' : 'Tạo Lô Hàng'}
+          {isLoading ? (
+              <>
+                <Loader2 className="animate-spin h-5 w-5" />
+                <span>{stepMessages[currentStep]}</span>
+              </>
+          ) : (
+              'Tạo Lô Hàng & Ghi lên Blockchain'
+          )}
         </button>
       </form>
 
-      {/* Hiển thị tiến trình */}
-      <div className="mt-4 space-y-2">
-        {isLoading && currentStep !== 'init' && (
-          <div className="mt-3 text-sm text-gray-600 flex items-center space-x-2">
-            <Spinner />
-            <span>{stepMessages[currentStep]}</span>
+      <div className="mt-4 space-y-3">
+        {currentStep === 'done' && txHash && (
+          <div className="p-3 bg-green-50 text-green-800 rounded-lg border border-green-200 text-sm flex items-start space-x-2">
+             <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+             <div>
+                <p className="font-semibold">Tạo thành công!</p>
+                <a
+                href={`https://amoy.polygonscan.com/tx/${txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 hover:underline inline-flex items-center mt-1"
+                >
+                Xem trên PolygonScan <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+             </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {currentStep === 'done' && txHash && (
-          <div className="mt-3 text-green-700 text-sm">
-            ✅ Tạo thành công!{' '}
-            <a
-              href={`https://amoy.polygonscan.com/tx/${txHash}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Xem giao dịch
-            </a>
-          </div>
-        )}
-        {error && (
-          <div className="mt-3 text-red-600 text-sm">⚠️ {error}</div>
-        )}
         {currentStep === 'done' && recentShipments.length > 0 && (
-          <ShipmentList shipments={recentShipments} title="Lô hàng vừa tạo" />
+          <div className="mt-6 border-t pt-4">
+             <ShipmentList shipments={recentShipments} />
+          </div>
         )}
       </div>
     </div>
