@@ -144,7 +144,7 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
             <label className="block text-sm font-medium text-gray-700 mb-1">Tên sản phẩm</label>
             <input
             type="text"
-            placeholder="Ví dụ: iPhone 15..."
+            placeholder="Ví dụ: iPhone 17..."
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
             disabled={isLoading}
@@ -157,7 +157,7 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
                 <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng</label>
                 <input
                 type="number"
-                placeholder="100"
+                placeholder="1000"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 disabled={isLoading}
@@ -191,7 +191,7 @@ export const CreateShipmentForm: React.FC<CreateShipmentFormProps> = ({ onCreate
                 <span>{stepMessages[currentStep]}</span>
               </>
           ) : (
-              'Tạo Lô Hàng & Ghi lên Blockchain'
+              'Tạo Lô Hàng'
           )}
         </button>
       </form>
