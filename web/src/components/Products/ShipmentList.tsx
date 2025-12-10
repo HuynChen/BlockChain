@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shipment } from '../../types';
+import ShipmentDetailModal from './ShipmentDetailModal';
 import { ShipmentStatusUpdater } from './ShipmentStatusUpdater';
+import { UploadButton } from "./UploadButton";
 
 export type ShipmentListProps = {
   title?: string;
   shipments: Shipment[];
-  onRefresh?: () => void; 
+  onRefresh?: () => void;
 };
 
 export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments, onRefresh }) => {
@@ -15,7 +17,21 @@ export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments, on
     return new Date(d).toLocaleString('vi-VN');
   };
 
-  
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const openDetail = (shipment: Shipment) => {
+    setSelectedShipment(shipment);
+    setOpen(true);
+  };
+
+  const handleRowKey = (e: React.KeyboardEvent, shipment: Shipment) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openDetail(shipment);
+    }
+  };
+
   const renderStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       CREATED: 'bg-blue-100 text-blue-800',
@@ -51,13 +67,21 @@ export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments, on
                 <th className="py-3 px-4 border-b">Trạng thái</th>
                 <th className="py-3 px-4 border-b">Ngày tạo/Sửa</th>
                 <th className="py-3 px-4 border-b text-center">Cập nhật</th>
+                <th className="py-3 px-4 border-b text-center">Upload</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {shipments.map((s) => (
-                <tr key={s.shipmentId || s.transactionHash} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={s.shipmentId || s.transactionHash}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => openDetail(s)}
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => handleRowKey(e, s)}
+                  aria-label={`Mở chi tiết lô hàng ${s.shipmentId || s.transactionHash}`}
+                >
                   <td className="py-3 px-4 font-mono text-xs">
-                    
                     {s.shipmentId ? (
                       <span className="font-bold text-blue-600">{s.shipmentId}</span>
                     ) : (
@@ -67,27 +91,44 @@ export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments, on
                     )}
                   </td>
                   <td className="py-3 px-4 font-medium">{s.productName}</td>
-                  <td className="py-3 px-4">
-                    {renderStatusBadge(s.status)}
+                  <td className="py-3 px-4">{renderStatusBadge(s.status)}</td>
+                  <td className="py-3 px-4 text-gray-530">{formatVN(s.updatedAt || s.createdAt)}</td>
+                  <td
+                    className="py-3 px-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-center">
+                      <ShipmentStatusUpdater
+                        shipmentId={s.shipmentId || s.transactionHash}
+                        currentStatus={s.status}
+                        onStatusUpdated={() => {
+                          if (onRefresh) onRefresh();
+                        }}
+                      />
+                    </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-500">
-                    {formatVN(s.updatedAt || s.createdAt)}
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <ShipmentStatusUpdater
-                      shipmentId={s.shipmentId || s.transactionHash}
-                      currentStatus={s.status}
-                      onStatusUpdated={() => {
-                        console.log("Status updated! Refreshing list...");
+                  <td
+                    className="py-3 px-4 text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <UploadButton
+                      shipmentId={s.shipmentId}
+                      onUploaded={() => {
                         if (onRefresh) onRefresh();
                       }}
                     />
+
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <ShipmentDetailModal
+            open={open}
+            shipment={selectedShipment}
+            onClose={() => setOpen(false)}
+          />
         </div>
       )}
     </div>

@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ethers } from 'ethers';
+// import { ethers } from 'ethers';
 import api from '../../services/apiService';
-import { getBlockchainContract } from '../../services/blockchainService';
+// import { getBlockchainContract } from '../../services/blockchainService';
 import { CreateShipmentForm } from './CreateShipmentForm';
 import { ShipmentList } from './ShipmentList';
-import { Search, Filter, RefreshCw, Link2 } from 'lucide-react';
-import { Shipment } from '../../types'; 
+import { Search, Filter, RefreshCw} from 'lucide-react';
+import { Shipment } from '../../types';
 
 const upsertShipment = (list: Shipment[], s: Shipment) => {
-  const id = s.shipmentId || s.transactionHash;       
   const i = list.findIndex(x => (x.shipmentId && x.shipmentId === s.shipmentId) || (x.transactionHash && x.transactionHash === s.transactionHash));
   let newList = [...list];
   if (i >= 0) newList[i] = { ...newList[i], ...s };
@@ -19,7 +18,7 @@ const upsertShipment = (list: Shipment[], s: Shipment) => {
 export const ProductTracking: React.FC = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
+  // const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -41,46 +40,64 @@ export const ProductTracking: React.FC = () => {
     }
   };
 
-  const syncWithBlockchain = async () => {
-    if (!window.ethereum) return alert("Cần ví MetaMask!");
-    setIsSyncing(true);
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = getBlockchainContract(provider);
-      
-      const statusMap = ["CREATED", "SHIPPED", "RECEIVED", "AUDITED", "FOR_SALE"];
-      let updateCount = 0;
+  // const syncWithBlockchain = async () => {
+  //   if (!window.ethereum) return alert("Cần ví MetaMask!");
+  //   setIsSyncing(true);
+  //   try {
+  //     const provider = new ethers.BrowserProvider(window.ethereum);
+  //     const contract = getBlockchainContract(provider);
 
-      const updatedList = await Promise.all(shipments.map(async (s) => {
-        if (!s.shipmentId || s.shipmentId.toString().startsWith('SHP-')) return s; 
+  //     const statusMap = ["CREATED", "SHIPPED", "RECEIVED", "AUDITED", "FOR_SALE"];
+  //     let updateCount = 0;
 
-        try {
-          const data = await contract.shipments(s.shipmentId);
-          const realStatusEnum = Number(data[5]);
-          const realStatus = statusMap[realStatusEnum];
+  //     const updatedList = await Promise.all(shipments.map(async (s) => {
+  //       shipments.map(async s => {
+  //         if (!s.shipmentId || s.shipmentId.toString().startsWith('SHP-')) return s;
 
-          if (realStatus && realStatus !== s.status) {
-             console.log(`Lô ${s.shipmentId}: Web(${s.status}) -> Chain(${realStatus})`);
-             updateCount++;
-             return { ...s, status: realStatus };
-          }
-        } catch (e) {
-          console.error(`Lỗi check lô ${s.shipmentId}`, e);
-        }
-        return s;
-      }));
+  //         try {
+  //           const data = await contract.shipments(s.shipmentId);
+  //           const realStatusEnum = Number(data[5]);
+  //           const realStatus = statusMap[realStatusEnum];
 
-      setShipments(updatedList as Shipment[]);
-      if (updateCount > 0) alert(`Đã đồng bộ xong! Cập nhật ${updateCount} lô hàng.`);
-      else alert("Dữ liệu đã khớp, không có gì thay đổi.");
+  //           if (realStatus && realStatus !== s.status) {
+  //             console.log(`Lô ${s.shipmentId}: Web(${s.status}) -> Chain(${realStatus})`);
+  //             updateCount++;
+  //             return { ...s, status: realStatus };
+  //           }
+  //         } catch (e) {
+  //           console.error(`Lỗi check lô ${s.shipmentId}`, e);
+  //           // không set error global để tránh spam — chỉ log chi tiết
+  //         }
+  //         return s;
+  //       })
 
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi khi kết nối Blockchain.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  //       try {
+  //         const data = await contract.shipments(s.shipmentId);
+  //         const realStatusEnum = Number(data[5]);
+  //         const realStatus = statusMap[realStatusEnum];
+
+  //         if (realStatus && realStatus !== s.status) {
+  //           console.log(`Lô ${s.shipmentId}: Web(${s.status}) -> Chain(${realStatus})`);
+  //           updateCount++;
+  //           return { ...s, status: realStatus };
+  //         }
+  //       } catch (e) {
+  //         console.error(`Lỗi check lô ${s.shipmentId}`, e);
+  //       }
+  //       return s;
+  //     }));
+
+  //     setShipments(updatedList as Shipment[]);
+  //     if (updateCount > 0) alert(`Đã đồng bộ xong! Cập nhật ${updateCount} lô hàng.`);
+  //     else alert("Dữ liệu đã khớp, không có gì thay đổi.");
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Lỗi khi kết nối Blockchain.");
+  //   } finally {
+  //     setIsSyncing(false);
+  //   }
+  // };
 
   useEffect(() => { fetchShipments(); }, []);
 
@@ -104,7 +121,7 @@ export const ProductTracking: React.FC = () => {
     return shipments.filter((s) => {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = (s.productName || '').toLowerCase().includes(searchLower) ||
-                            (s.shipmentId || '').toLowerCase().includes(searchLower);
+        (s.shipmentId || '').toLowerCase().includes(searchLower);
       const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
       return matchesSearch && matchesStatus;
     });
@@ -129,22 +146,33 @@ export const ProductTracking: React.FC = () => {
             {isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ Blockchain'}
           </button> */}
 
-          <button 
+          <button
             onClick={fetchShipments}
             className="p-2 bg-white border rounded hover:bg-gray-100 text-gray-600"
             title="Tải lại"
+            disabled={loading}
           >
             <RefreshCw className="w-5 h-5" />
           </button>
         </div>
       </div>
 
+      {error && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-800"
+        >
+          {error}
+        </div>
+      )}
+
       <div className="mb-6">
         <CreateShipmentForm onCreated={handleCreated} getNextShipmentId={() => nextShipmentId} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex-1 max-w-md">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -158,28 +186,28 @@ export const ProductTracking: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="CREATED">ĐÃ TẠO</option>
-                <option value="SHIPPED">ĐÃ GỬI</option>
-                <option value="RECEIVED">ĐÃ NHẬN</option>
-                <option value="AUDITED">ĐÃ KIỂM DUYỆT</option>
-                <option value="FOR_SALE">ĐANG BÁN</option>
-              </select>
+            <Filter className="h-4 w-4 text-gray-400" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2"
+            >
+              <option value="all">ALL</option>
+              <option value="CREATED">CREATED</option>
+              <option value="SHIPPED">SHIPPED</option>
+              <option value="RECEIVED">RECEIVED</option>
+              <option value="AUDITED">AUDITED</option>
+              <option value="FOR_SALE">FOR_SALE</option>
+            </select>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <ShipmentList 
-            title={`Danh sách lô hàng (${filteredShipments.length})`}
-            shipments={filteredShipments}
-            onRefresh={fetchShipments} 
+        <ShipmentList
+          title={`Danh sách lô hàng (${filteredShipments.length})`}
+          shipments={filteredShipments}
+          onRefresh={fetchShipments}
         />
       </div>
     </div>

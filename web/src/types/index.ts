@@ -8,6 +8,7 @@ export type Shipment = {
   producerAddress: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  ipfsHash?: string;
 };
 
 export interface Supplier {
