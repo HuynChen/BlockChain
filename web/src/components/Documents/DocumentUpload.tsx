@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Loader2, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Loader2} from 'lucide-react';
 import { callAddDocumentHash } from '../../services/blockchainService';
 import { useToast } from '../context/ToastContext';
 
