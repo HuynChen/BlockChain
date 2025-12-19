@@ -7,7 +7,6 @@ export const UploadButton: React.FC<{ shipmentId: string, onUploaded?: (cid: str
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setLoading(true);
 
     try {
