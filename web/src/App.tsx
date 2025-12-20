@@ -14,7 +14,15 @@ function App() {
   const [isAuthed, setIsAuthed] = useState<boolean>(!!localStorage.getItem("token"));
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const [isPublicTracking, setIsPublicTracking] = useState(false);
+  const [isPublicTracking, setIsPublicTracking] = useState<boolean>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const hasId = !!params.get('id');
+      return window.location.pathname.startsWith('/tracking') || hasId;
+    } catch {
+      return false;
+    }
+  });
 
   const savedUser = (() => {
     try {
@@ -61,8 +69,7 @@ function App() {
               }
             }}
           />
-
-          <div className="mt-6 text-center z-10">
+          <div className="mt-20 text-center z-10">
             <p className="text-gray-500 mb-2">Bạn là khách hàng?</p>
             <button
               onClick={() => setIsPublicTracking(true)}
@@ -88,7 +95,6 @@ function App() {
         return <SupplierManagement />;
       case 'transactions':
         return <BlockchainLog />;
-
       case 'tracking':
         return <ConsumerTracking />;
 

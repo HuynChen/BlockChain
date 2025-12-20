@@ -7,7 +7,7 @@ import { Printer, ExternalLink, Package } from 'lucide-react';
 export const QRCodeGenerator: React.FC<{ shipment: Shipment }> = ({ shipment }) => {
 
   // const trackingUrl = `${window.location.origin}/shipments/${shipment.shipmentId}`;
-  const qrLink = `${import.meta.env.VITE_API_URL}/shipments/${shipment.shipmentId}`;
+  const qrLink = `${import.meta.env.VITE_FRONTEND_URL}/tracking?id=${shipment.shipmentId}`;
 
   const handlePrint = () => {
     const printContent = document.getElementById(`qr-card-${shipment.shipmentId}`);
