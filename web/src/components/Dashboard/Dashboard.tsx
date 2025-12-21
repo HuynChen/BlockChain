@@ -10,6 +10,15 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const STATUS_STYLE: Record<string, string> = {
+    CREATED: 'bg-blue-100 text-blue-800',
+    SHIPPED: 'bg-yellow-100 text-yellow-800',
+    RECEIVED: 'bg-purple-100 text-purple-800',
+    AUDITED: 'bg-green-100 text-green-800',
+    FOR_SALE: 'bg-red-100 text-red-800',
+  };
+
+
   const fetchShipments = async () => {
     setLoading(true);
     try {
@@ -109,7 +118,7 @@ export const Dashboard: React.FC = () => {
       />
 
       {/* Charts and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-8">
         {/* Supply Chain Flow Chart */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -186,7 +195,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Recent Transactions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Giao dịch blockchain gần đây</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Giao dịch gần đây</h3>
         <div className="overflow-x-auto">
 
           {/* Nếu không có shipments */}
@@ -208,8 +217,8 @@ export const Dashboard: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
 
                 {shipments
-                  .slice(-4)         
-                  .reverse()         
+                  .slice(-4)
+                  .reverse()
                   .map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="py-3 px-4">
@@ -226,12 +235,10 @@ export const Dashboard: React.FC = () => {
 
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${item.status === 'Đã xác nhận'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_STYLE[item.status] ?? 'bg-gray-100 text-gray-700'
                             }`}
                         >
-                          {item.status || 'Không rõ'}
+                          {item.status}
                         </span>
                       </td>
 

@@ -132,7 +132,7 @@ export const SupplierManagement: React.FC = () => {
       </div>
 
       {/* Suppliers Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredSuppliers.map((supplier) => (
           <div key={supplier.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
             <div className="p-6">
@@ -215,10 +215,10 @@ export const SupplierManagement: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Supplier Detail Modal */}
-      {selectedSupplier && (
+      {/* {selectedSupplier && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
@@ -308,7 +308,7 @@ export const SupplierManagement: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

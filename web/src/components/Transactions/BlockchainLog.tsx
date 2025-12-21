@@ -156,7 +156,7 @@ export const BlockchainLog: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -235,10 +235,10 @@ export const BlockchainLog: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
 
       {/* Transaction Detail Modal */}
-      {selectedTransaction && (
+      {/* {selectedTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
@@ -315,7 +315,7 @@ export const BlockchainLog: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
