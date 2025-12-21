@@ -150,6 +150,7 @@ export const BlockchainLog: React.FC = () => {
         </select>
       </div>
 
+
       {/* TABLE */}
       <div className="bg-white rounded-xl overflow-hidden border">
         <table className="w-full">
@@ -172,6 +173,7 @@ export const BlockchainLog: React.FC = () => {
                   key={tx.id || index}
                   onClick={() => setSelectedTransaction(tx)}
                   className="hover:bg-gray-50 cursor-pointer border-t"
+
                 >
                   <td className="px-6 py-4">
                     <Hash className="inline h-4 w-4 text-blue-600 mr-2" />
@@ -239,7 +241,26 @@ export const BlockchainLog: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
+
 };
+
+// const getTypeLabel = (type: string) => {
+//   switch (type) {
+//     case 'transfer': return 'Chuyển giao';
+//     case 'verification': return 'Xác minh';
+//     case 'certification': return 'Chứng nhận';
+//     default: return type;
+//   }
+// };
+// const getStatusLabel = (status: string) => {
+//   switch (status) {
+//     case 'confirmed': return 'Đã xác nhận';
+//     case 'pending': return 'Đang chờ';
+//     case 'failed': return 'Thất bại';
+//     default: return status;
+//   }
+// };
+>>>>>>> 0102233d7b7dc7c8df2fed50c32755702fe6073f

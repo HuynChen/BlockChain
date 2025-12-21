@@ -185,63 +185,6 @@ export const SupplierManagement: React.FC = () => {
 
       {/* GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredSuppliers.map((supplier) => (
-          <div
-            key={supplier.id}
-            className="bg-white rounded-xl border shadow-sm hover:shadow-md"
-          >
-            <div className="p-6">
-              <div className="flex justify-between mb-2">
-                <h3 className="font-semibold">{supplier.name}</h3>
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
-                    supplier.status
-                  )}`}
-                >
-                  {getStatusLabel(supplier.status)}
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-500 mb-3 flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
-                {supplier.location}
-              </p>
-
-              <div className="flex justify-between text-sm mb-4">
-                <span>{supplier.trustScore} điểm</span>
-                <span>{supplier.productsSupplied} sản phẩm</span>
-              </div>
-
-              <div className="flex justify-between border-t pt-3">
-                <button
-                  onClick={() => setSelectedSupplier(supplier)}
-                  className="text-blue-600 text-sm"
-                >
-                  Xem
-                </button>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditSupplier(supplier)}
-                    className="text-yellow-600 text-sm"
-                  >
-                    Sửa
-                  </button>
-
-                  {supplier.status !== "verified" && (
-                    <button
-                      onClick={() => handleDeleteSupplier(supplier)}
-                      className="text-red-600 text-sm"
-                    >
-                      Xóa
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* ADD */}
       {showAddModal && (
@@ -271,6 +214,7 @@ export const SupplierManagement: React.FC = () => {
               {selectedSupplier.location}
             </p>
 
+
             <div className="space-y-2 text-sm">
               <div>
                 <b>Điểm tin cậy:</b> {selectedSupplier.trustScore}
@@ -295,7 +239,7 @@ export const SupplierManagement: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

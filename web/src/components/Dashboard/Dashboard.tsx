@@ -41,6 +41,7 @@ export const Dashboard: React.FC = () => {
 
   /* ===== LOAD DATA THẬT ===== */
   const loadData = async () => {
+
     setLoading(true);
     try {
       const [shipmentsRes, statsRes, suppliersRes] = await Promise.all([
@@ -164,6 +165,7 @@ export const Dashboard: React.FC = () => {
             <TrendingUp className="w-5 h-5 text-blue-500" /> Luồng hoạt động
           </h3>
           <div className="h-48 bg-gray-50 rounded-lg flex items-center justify-around px-10">
+
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 text-white shadow-md">
                 <Users className="w-6 h-6" />
@@ -215,6 +217,7 @@ export const Dashboard: React.FC = () => {
       {error && (
         <p className="mt-6 text-sm text-red-600">{error}</p>
       )}
+
     </div>
   );
 }

@@ -26,8 +26,8 @@ const renderStatusBadge = (status: string) => {
     CREATED: 'bg-blue-100 text-blue-800',
     SHIPPED: 'bg-yellow-100 text-yellow-800',
     RECEIVED: 'bg-purple-100 text-purple-800',
-    AUDITED: 'bg-indigo-100 text-indigo-800',
-    FOR_SALE: 'bg-green-100 text-green-800',
+    AUDITED: 'bg-green-100 text-green-800',
+    FOR_SALE: 'bg-red-100 text-red-800',
   };
   const colorClass = colors[status] || 'bg-gray-100 text-gray-600';
 

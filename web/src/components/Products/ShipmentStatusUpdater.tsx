@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { callUpdateStatus, ShipmentStatus } from '../../services/blockchainService';
-import { RefreshCw, AlertCircle, Truck, PackageCheck, ShieldCheck, Tag, Edit, X, Check, Copy } from 'lucide-react';
+import { RefreshCw, Truck, PackageCheck, ShieldCheck, Tag, Edit, X, Check, Copy } from 'lucide-react';
 import axios from "axios";
 import { useToast } from '../context/ToastContext';
 

@@ -142,6 +142,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
 };
 
 
+
 // Cập nhật trạng thái lô hàng + transactionHash
 export const updateShipmentStatus = async (req: Request, res: Response) => {
   try {
