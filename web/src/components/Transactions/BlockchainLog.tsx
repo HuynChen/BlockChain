@@ -320,19 +320,19 @@ export const BlockchainLog: React.FC = () => {
   );
 };
 
-const getTypeLabel = (type: string) => {
-  switch (type) {
-    case 'transfer': return 'Chuyển giao';
-    case 'verification': return 'Xác minh';
-    case 'certification': return 'Chứng nhận';
-    default: return type;
-  }
-};
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'confirmed': return 'Đã xác nhận';
-    case 'pending': return 'Đang chờ';
-    case 'failed': return 'Thất bại';
-    default: return status;
-  }
-};
+// const getTypeLabel = (type: string) => {
+//   switch (type) {
+//     case 'transfer': return 'Chuyển giao';
+//     case 'verification': return 'Xác minh';
+//     case 'certification': return 'Chứng nhận';
+//     default: return type;
+//   }
+// };
+// const getStatusLabel = (status: string) => {
+//   switch (status) {
+//     case 'confirmed': return 'Đã xác nhận';
+//     case 'pending': return 'Đang chờ';
+//     case 'failed': return 'Thất bại';
+//     default: return status;
+//   }
+// };

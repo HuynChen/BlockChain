@@ -125,46 +125,21 @@ export const getShipmentById = async (req: Request, res: Response) => {
 
     const shipment = await Shipment.findOne({ shipmentId: id }).lean();
 
-  if (!shipment) {
-  if (req.headers.accept && req.headers.accept.includes('text/html')) {
-    return res.status(404).send(`<h1>Không tìm thấy lô hàng: ${id}</h1>`);
-  }
+    if (!shipment) {
+      return res.status(404).json({
+        message: "Shipment not found",
+        shipmentId: id,
+      });
+    }
 
-  return res.status(404).json({
-    message: "Shipment not found",
-    shipmentId: id,
-  });
-}
-
-    // Nếu API
-    return res.status(404).json({ error: 'Shipment not found' });
-  }
-
-  // Nếu browser mở route → trả HTML
-  if (req.headers.accept && req.headers.accept.includes('text/html')) {
-    return res.send(`
-      <html>
-      <head>
-        <meta charset="UTF-8" />
-        <title>Thông tin lô hàng</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; }
-          .box { border: 1px solid #ccc; padding: 16px; border-radius: 10px; }
-        </style>
-      </head>
-      <body>
-        <h1>Lô hàng ${shipment.shipmentId}</h1>
-        <div class="box">
-          <p><b>Tên SP:</b> ${shipment.productName}</p>
-          <p><b>Số lượng:</b> ${shipment.quantity}</p>
-          <p><b>Trạng thái:</b> ${shipment.status}</p>
-          <p><b>Ngày SX:</b> ${new Date(shipment.manufacturingDate).toLocaleString('vi-VN')}</p>
-        </div>
-      </body>
-      </html>
-    `);
+    return res.status(200).json(shipment);
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message || "Server error",
+    });
   }
 };
+
 
 
 // Cập nhật trạng thái lô hàng + transactionHash
