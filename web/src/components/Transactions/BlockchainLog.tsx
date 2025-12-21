@@ -241,7 +241,7 @@ export const BlockchainLog: React.FC = () => {
             </button>
           </div>
         </div>
-      )} */}
+      )} */
     </div>
   );
 
@@ -263,4 +263,3 @@ export const BlockchainLog: React.FC = () => {
 //     default: return status;
 //   }
 // };
->>>>>>> 0102233d7b7dc7c8df2fed50c32755702fe6073f
