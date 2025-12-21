@@ -5,7 +5,7 @@ import connectDB from './config/db';
 import userRoutes from './routes/userRoutes';
 import shipmentRoutes from './routes/shipmentRoutes';
 import ipfsRoutes from "./routes/ipfsRoutes";
-
+import supplierRoutes from "./routes/supplierRoutes";
 
 dotenv.config();
 console.log("Pinata JWT Loaded:", process.env.PINATA_JWT ? "YES" : "NO");
@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-
+app.use("/api/suppliers", supplierRoutes);
 // User routes
 app.use('/api/users', userRoutes);
 

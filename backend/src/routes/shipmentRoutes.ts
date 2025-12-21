@@ -1,17 +1,25 @@
 import express from "express";
-import { getShipments, createShipment, getShipmentById,
-     updateShipmentStatus, updateShipmentById, getShipmentStats  } from "../controllers/shipmentController";
-
+import {
+  getShipments,
+  createShipment,
+  getShipmentById,
+  updateShipmentStatus,
+  updateShipmentById,
+  getShipmentStats,
+  getBlockchainLogs,
+} from "../controllers/shipmentController";
 
 const router = express.Router();
 
-router.get("/stats", getShipmentStats); 
+router.get("/stats", getShipmentStats);
+
+router.get("/blockchain-logs", getBlockchainLogs);
+
 router.get("/", getShipments);
-router.post("/", createShipment);  // lay ds shipment 
-router.get('/:id', getShipmentById); // lay chi tiet 1 shipment theo id 
-router.patch("/status", updateShipmentStatus); 
-router.put("/:id", updateShipmentById); 
+router.post("/", createShipment);
 
-
+router.patch("/:id/status", updateShipmentStatus);
+router.get("/:id", getShipmentById);
+router.put("/:id", updateShipmentById);
 
 export default router;

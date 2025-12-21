@@ -1,99 +1,146 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/apiService';
-import { Package, Users, Activity, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
+import {
+  Package,
+  Users,
+  Activity,
+  Shield,
+  TrendingUp,
+  AlertTriangle,
+  RefreshCw
+} from 'lucide-react';
 import { MetricCard } from './MetricCard';
 import { ShipmentList } from '../Products/ShipmentList';
 import { Shipment } from '../../types';
 
+/* ===== Interface ===== */
+interface DashboardStats {
+  totalShipments: number;
+  productGrowth: string;
+  activeSuppliers: number;
+  newSuppliersCount: string;
+  blockchainTransactions: number;
+  transactionsToday: string;
+  complianceRate: string;
+}
+
 export const Dashboard: React.FC = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalShipments: 0,
+    productGrowth: "+0% tháng này",
+    activeSuppliers: 0,
+    newSuppliersCount: "+0 mới tuần này",
+    blockchainTransactions: 0,
+    transactionsToday: "+0 hôm nay",
+    complianceRate: "0"
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchShipments = async () => {
+  /* ===== LOAD DATA THẬT ===== */
+  const loadData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/shipments');
-      let data: Shipment[] = [];
-      if (Array.isArray(response.data)) data = response.data;
-      else if (Array.isArray(response.data?.shipments)) data = response.data.shipments;
-      else data = response.data?.data || [];
-      setShipments(data || []);
+      const [shipmentsRes, statsRes, suppliersRes] = await Promise.all([
+        api.get('/shipments'),
+        api.get('/shipments/stats'),
+        api.get('/suppliers')
+      ]);
+
+      /* Shipments */
+      const shipmentData = shipmentsRes.data?.data || shipmentsRes.data || [];
+      setShipments(shipmentData);
+
+      /* Suppliers */
+      const suppliers = Array.isArray(suppliersRes.data)
+        ? suppliersRes.data
+        : [];
+
+      const activeSuppliersCount = suppliers.length; 
+      // Nếu sau này có status thì đổi thành:
+      // suppliers.filter(s => s.status === "ACTIVE").length
+
+      /* Stats */
+      setStats({
+  ...statsRes.data,
+  activeSuppliers: activeSuppliersCount,
+  newSuppliersCount: "Dữ liệu thực tế"
+});
+
       setError('');
-    } catch (err: any) {
-      setError('Không tải được dữ liệu lô hàng');
+    } catch (err) {
+      console.error(err);
+      setError('Không thể đồng bộ dữ liệu thực tế từ hệ thống');
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => { fetchShipments(); }, []);
-  // 🧭 Gọi API lấy dữ liệu khi component mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const response = await api.get('/shipments');
-        let shipmentsData: any = [];
-        if (Array.isArray(response.data)) {
-          shipmentsData = response.data;
-        } else if (Array.isArray(response.data?.shipments)) {
-          shipmentsData = response.data.shipments;
-        } else if (Array.isArray(response.data?.data)) {
-          shipmentsData = response.data.data;
-        } else {
-          shipmentsData = response.data?.shipmentsList || response.data?.items || [];
-        }
 
-        setShipments(shipmentsData || []);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || 'Không tải được dữ liệu lô hàng');
-      } finally {
-        setLoading(false);
-      }
-    })();
+  useEffect(() => {
+    loadData();
   }, []);
 
-  // 💡 Hiển thị trạng thái tải
-  if (loading) return <div className="p-6">Đang tải dữ liệu từ blockchain...</div>;
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
+  /* ===== LOADING ===== */
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mr-2" />
+        <span>Đang tải dữ liệu từ chuỗi cung ứng...</span>
+      </div>
+    );
+  }
 
+  /* ===== UI ===== */
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Supply Chain Dashboard</h2>
-        <p className="text-gray-600">
-          Tổng quan về chuỗi cung ứng được bảo mật bằng blockchain và hiệu suất hoạt động
-        </p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Supply Chain Dashboard
+          </h2>
+          <p className="text-gray-600">
+            Dữ liệu thời gian thực từ Blockchain Polygon Amoy
+          </p>
+        </div>
+        <button
+          onClick={loadData}
+          className="p-2 bg-white border rounded-lg shadow-sm hover:bg-gray-50"
+        >
+          <RefreshCw className="w-5 h-5 text-gray-500" />
+        </button>
       </div>
 
-      {/* === Metrics Grid === */}
+      {/* ===== METRICS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           title="Tổng sản phẩm"
-          value="2,847"
-          change="+12% tháng này"
+          value={stats.totalShipments.toLocaleString()}
+          change={stats.productGrowth}
           changeType="tích cực"
           icon={Package}
           color="blue"
         />
         <MetricCard
           title="Nhà cung cấp hoạt động"
-          value="156"
-          change="+8 mới tuần này"
+          value={stats.activeSuppliers.toString()}
+          change={stats.newSuppliersCount}
           changeType="tích cực"
           icon={Users}
           color="green"
         />
         <MetricCard
           title="Giao dịch blockchain"
-          value="18,423"
-          change="+125 hôm nay"
+          value={stats.blockchainTransactions.toLocaleString()}
+          change={stats.transactionsToday}
           changeType="tích cực"
           icon={Activity}
           color="purple"
         />
         <MetricCard
           title="Tỷ lệ tuân thủ"
-          value="98.7%"
+          value={`${stats.complianceRate}%`}
           change="+0.3% cải thiện"
           changeType="tích cực"
           icon={Shield}
@@ -101,154 +148,73 @@ export const Dashboard: React.FC = () => {
         />
       </div>
 
-      {/* === Shipment Table (thay cho mock data) === */}
-      <ShipmentList
-        title={`Danh sách lô hàng`}
-        shipments={shipments}
-        onRefresh={fetchShipments}
-      />
+      {/* ===== SHIPMENTS ===== */}
+      <div className="mb-8">
+        <ShipmentList
+          title="Lô hàng mới cập nhật"
+          shipments={shipments}
+          onRefresh={loadData}
+        />
+      </div>
 
-      {/* Charts and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Supply Chain Flow Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Luồng chuỗi cung ứng</h3>
-            <TrendingUp className="h-5 w-5 text-gray-400" />
-          </div>
-          <div className="h-64 bg-gradient-to-r from-blue-50 to-teal-50 rounded-lg flex items-center justify-center">
+      {/* ===== FLOW ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-500" /> Luồng hoạt động
+          </h3>
+          <div className="h-48 bg-gray-50 rounded-lg flex items-center justify-around px-10">
             <div className="text-center">
-              <div className="flex items-center justify-center space-x-8 mb-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-2">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Nhà cung cấp</span>
-                  <span className="text-xs text-gray-500">156 đang hoạt động</span>
-                </div>
-                <div className="w-8 h-0.5 bg-gray-300"></div>
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-2">
-                    <Package className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Sản xuất</span>
-                  <span className="text-xs text-gray-500">2,847 sản phẩm</span>
-                </div>
-                <div className="w-8 h-0.5 bg-gray-300"></div>
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-2">
-                    <Activity className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Phân phối</span>
-                  <span className="text-xs text-gray-500">18,423 giao dịch</span>
-                </div>
+              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 text-white shadow-md">
+                <Users className="w-6 h-6" />
               </div>
+              <p className="text-sm font-bold">{stats.activeSuppliers}</p>
+              <p className="text-[10px] text-gray-500 uppercase">Suppliers</p>
+            </div>
+
+            <div className="h-px bg-gray-300 flex-1 mx-4"></div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2 text-white shadow-md">
+                <Package className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold">{stats.totalShipments}</p>
+              <p className="text-[10px] text-gray-500 uppercase">Products</p>
+            </div>
+
+            <div className="h-px bg-gray-300 flex-1 mx-4"></div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 text-white shadow-md">
+                <Activity className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold">{stats.blockchainTransactions}</p>
+              <p className="text-[10px] text-gray-500 uppercase">Actions</p>
             </div>
           </div>
         </div>
 
-        {/* Recent Alerts */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Cảnh báo gần đây</h3>
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Cảnh báo nhiệt độ</p>
-                <p className="text-xs text-gray-600">Sản phẩm PRD-2847 vượt ngưỡng nhiệt độ</p>
-                <p className="text-xs text-gray-400 mt-1">2 giờ trước</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
-              <div className="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Xác minh thất bại</p>
-                <p className="text-xs text-gray-600">Đang chờ xác minh nhà cung cấp SUP-156</p>
-                <p className="text-xs text-gray-400 mt-1">4 giờ trước</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Hợp đồng mới được triển khai</p>
-                <p className="text-xs text-gray-600">Hợp đồng đảm bảo chất lượng QA-v2.1</p>
-                <p className="text-xs text-gray-400 mt-1">6 giờ trước</p>
-              </div>
+        {/* ===== ALERT ===== */}
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-yellow-500" /> Thông báo
+          </h3>
+          <div className="space-y-3">
+            <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+              <p className="text-xs font-bold text-green-800">
+                Hệ thống ổn định
+              </p>
+              <p className="text-[10px] text-green-600">
+                Đã đồng bộ {stats.blockchainTransactions} giao dịch thành công.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Transactions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Giao dịch blockchain gần đây</h3>
-        <div className="overflow-x-auto">
-
-          {/* Nếu không có shipments */}
-          {shipments.length === 0 ? (
-            <div className="py-6 text-center text-gray-500">
-              Không có giao dịch nào gần đây
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Mã hash</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Mã sản phẩm</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Thời gian</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-200">
-
-                {shipments
-                  .slice(-4)         
-                  .reverse()         
-                  .map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                          {item.transactionHash?.slice(0, 6) ?? '0x0000'}
-                          ...
-                          {item.transactionHash?.slice(-4) ?? '0000'}
-                        </code>
-                      </td>
-
-                      <td className="py-3 px-4 text-sm font-medium text-blue-600">
-                        {item.shipmentId}
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${item.status === 'Đã xác nhận'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                        >
-                          {item.status || 'Không rõ'}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-sm text-gray-500">
-                        {item.updatedAt
-                          ? new Date(item.updatedAt).toLocaleString('vi-VN')
-                          : 'Không rõ'}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          )}
-
-        </div>
-      </div>
-
+      {error && (
+        <p className="mt-6 text-sm text-red-600">{error}</p>
+      )}
     </div>
   );
-};
+}
