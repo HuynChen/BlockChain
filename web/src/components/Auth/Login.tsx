@@ -28,7 +28,7 @@ export default function Login({ onSuccess }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="flex items-center justify-center ">
       <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow">
         <h1 className="text-2xl font-semibold mb-4 text-center">Đăng nhập</h1>
 

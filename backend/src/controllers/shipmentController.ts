@@ -120,15 +120,21 @@ export const createShipment = async (req: Request, res: Response) => {
 
 // Lấy chi tiết 1 shipment theo shipmentId hoặc _id (MongoDB)
 export const getShipmentById = async (req: Request, res: Response) => {
-  const id = req.params.id;
+  try {
+    const { id } = req.params;
 
-  const shipment = await Shipment.findOne({ shipmentId: id });
+    const shipment = await Shipment.findOne({ shipmentId: id }).lean();
 
   if (!shipment) {
-    // Nếu trình duyệt
-    if (req.headers.accept && req.headers.accept.includes('text/html')) {
-      return res.status(404).send(`<h1> Không tìm thấy lô hàng: ${id}</h1>`);
-    }
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    return res.status(404).send(`<h1>Không tìm thấy lô hàng: ${id}</h1>`);
+  }
+
+  return res.status(404).json({
+    message: "Shipment not found",
+    shipmentId: id,
+  });
+}
 
     // Nếu API
     return res.status(404).json({ error: 'Shipment not found' });
@@ -158,10 +164,8 @@ export const getShipmentById = async (req: Request, res: Response) => {
       </html>
     `);
   }
-
-  // Nếu là REST client / Axios → trả JSON
-  return res.json(shipment);
 };
+
 
 // Cập nhật trạng thái lô hàng + transactionHash
 export const updateShipmentStatus = async (req: Request, res: Response) => {

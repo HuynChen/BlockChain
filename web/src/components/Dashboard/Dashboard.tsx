@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Supply Chain Dashboard</h2>
         <p className="text-gray-600">
-          Real-time overview of your blockchain-secured supply chain
+          Tổng quan về chuỗi cung ứng được bảo mật bằng blockchain và hiệu suất hoạt động
         </p>
       </div>
 
@@ -188,44 +188,67 @@ export const Dashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Giao dịch blockchain gần đây</h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Mã băm giao dịch</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Loại</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Mã sản phẩm</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Thời gian</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {[
-                { hash: '0x7f5e...a2d1', type: 'Chuyển', productId: 'PRD-2847', status: 'Đã xác nhận', time: '2 phút trước' },
-                { hash: '0x1a9b...f3c4', type: 'Xác minh', productId: 'PRD-2846', status: 'Đã xác nhận', time: '8 phút trước' },
-                { hash: '0x9d2c...e5f6', type: 'Chứng nhận', productId: 'PRD-2845', status: 'Đang chờ', time: '15 phút trước' },
-                { hash: '0x3e7f...b8a9', type: 'Chuyển', productId: 'PRD-2844', status: 'Đã xác nhận', time: '22 phút trước' },
-              ].map((tx, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{tx.hash}</code>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-900">{tx.type}</td>
-                  <td className="py-3 px-4 text-sm font-medium text-blue-600">{tx.productId}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${tx.status === 'Đã xác nhận'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">{tx.time}</td>
+
+          {/* Nếu không có shipments */}
+          {shipments.length === 0 ? (
+            <div className="py-6 text-center text-gray-500">
+              Không có giao dịch nào gần đây
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Mã hash</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Mã sản phẩm</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Thời gian</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200">
+
+                {shipments
+                  .slice(-4)         
+                  .reverse()         
+                  .map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                          {item.transactionHash?.slice(0, 6) ?? '0x0000'}
+                          ...
+                          {item.transactionHash?.slice(-4) ?? '0000'}
+                        </code>
+                      </td>
+
+                      <td className="py-3 px-4 text-sm font-medium text-blue-600">
+                        {item.shipmentId}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${item.status === 'Đã xác nhận'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                        >
+                          {item.status || 'Không rõ'}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 text-sm text-gray-500">
+                        {item.updatedAt
+                          ? new Date(item.updatedAt).toLocaleString('vi-VN')
+                          : 'Không rõ'}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
         </div>
       </div>
+
     </div>
   );
 };
