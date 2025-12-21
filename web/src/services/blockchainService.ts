@@ -16,7 +16,7 @@ const AMOY_CONFIG = {
   blockExplorerUrls: ["https://amoy.polygonscan.com/"],
 };
 
-const CONTRACT_ADDRESS = "0x9468ED35C5A8C2a766A1efE7ebCDB2CACc8C36e8";
+const CONTRACT_ADDRESS = "0x10bf4951c78204632e2992aC5edEec1c046b36A8";
 const CONTRACT_ABI = ABI;
 
 export enum ShipmentStatus {
