@@ -36,12 +36,12 @@ export const Dashboard: React.FC = () => {
     complianceRate: "0"
   });
 
+  const [aiAlerts, setAiAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   /* ===== LOAD DATA THẬT ===== */
   const loadData = async () => {
-
     setLoading(true);
     try {
       const [shipmentsRes, statsRes, suppliersRes] = await Promise.all([
@@ -50,25 +50,17 @@ export const Dashboard: React.FC = () => {
         api.get('/suppliers')
       ]);
 
-      /* Shipments */
       const shipmentData = shipmentsRes.data?.data || shipmentsRes.data || [];
       setShipments(shipmentData);
 
-      /* Suppliers */
-      const suppliers = Array.isArray(suppliersRes.data)
-        ? suppliersRes.data
-        : [];
+      const suppliers = Array.isArray(suppliersRes.data) ? suppliersRes.data : [];
+      const activeSuppliersCount = suppliers.length;
 
-      const activeSuppliersCount = suppliers.length; 
-      // Nếu sau này có status thì đổi thành:
-      // suppliers.filter(s => s.status === "ACTIVE").length
-
-      /* Stats */
       setStats({
-  ...statsRes.data,
-  activeSuppliers: activeSuppliersCount,
-  newSuppliersCount: "Dữ liệu thực tế"
-});
+        ...statsRes.data,
+        activeSuppliers: activeSuppliersCount,
+        newSuppliersCount: 'Dữ liệu thực tế',
+      });
 
       setError('');
     } catch (err) {
@@ -81,6 +73,47 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  const formatDuration = (ms: number) => {
+    const totalMinutes = Math.round(ms / 60000);
+
+    if (totalMinutes < 60) {
+      return `${totalMinutes} phút`;
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return minutes === 0
+      ? `${hours} giờ`
+      : `${hours} giờ ${minutes} phút`;
+  };
+
+  const explainAnomaly = (alert: any) => {
+    const [from, to] = alert.transition.split("->");
+
+    const speed =
+      alert.zScore < 0
+        ? "nhanh bất thường"
+        : "chậm bất thường";
+
+    return {
+      title: `${from} → ${to}`,
+      message: `Thời gian chuyển trạng thái ${speed}`,
+      detail: `Mất ${formatDuration(alert.latestDelta)} (trung bình ${formatDuration(alert.sampleMean)})`,
+    };
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/shipments/ai/alerts');
+        setAiAlerts(res.data || []);
+      } catch {
+        setAiAlerts([]);
+      }
+    })();
   }, []);
 
   /* ===== LOADING ===== */
@@ -196,21 +229,53 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* ===== ALERT ===== */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-500" /> Thông báo
-          </h3>
-          <div className="space-y-3">
-            <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-              <p className="text-xs font-bold text-green-800">
-                Hệ thống ổn định
-              </p>
-              <p className="text-[10px] text-green-600">
-                Đã đồng bộ {stats.blockchainTransactions} giao dịch thành công.
-              </p>
-            </div>
+        {/* Recent Alerts */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Cảnh báo AI</h3>
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
           </div>
+
+          {aiAlerts.length === 0 ? (
+            <p className="text-sm text-gray-500">Không có bất thường được phát hiện</p>
+          ) : (
+            <div className="space-y-4">
+              {aiAlerts.map((alert, idx) => {
+                const info = explainAnomaly(alert);
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-start space-x-3 p-3 rounded-lg ${alert.level === "HIGH" ? "bg-red-50" : "bg-yellow-50"
+                      }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 ${alert.level === "HIGH" ? "bg-red-500" : "bg-yellow-500"
+                        }`}
+                    />
+
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Shipment {alert.shipmentId} - {info.title}
+                      </p>
+
+                      <p className="text-sm text-gray-700">
+                        {info.message}
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        {info.detail}
+                      </p>
+
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Z-score: {alert.zScore.toFixed(2)} • {alert.level}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+            </div>
+          )}
         </div>
       </div>
 

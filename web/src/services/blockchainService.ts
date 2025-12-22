@@ -174,10 +174,11 @@ export const getShipmentStatusOnChain = async (id: string | number): Promise<Cha
     let provider;
 
     if (typeof (window as any).ethereum !== 'undefined') {
-        provider = new ethers.BrowserProvider((window as any).ethereum);
+      provider = new ethers.BrowserProvider((window as any).ethereum);
     } else {
-        console.log("Không có ví, dùng Public RPC...");
-        provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+      console.log("Không có ví, dùng Public RPC...");
+      const fallbackRpc = AMOY_CONFIG.rpcUrls && AMOY_CONFIG.rpcUrls.length > 0 ? AMOY_CONFIG.rpcUrls[0] : "https://polygon-amoy.drpc.org";
+      provider = new ethers.JsonRpcProvider(fallbackRpc);
     }
 
     const contract = getBlockchainContract(provider);

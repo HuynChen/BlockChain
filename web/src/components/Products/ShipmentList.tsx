@@ -184,7 +184,7 @@ export const ShipmentList: React.FC<ShipmentListProps> = ({ title, shipments, on
           Chưa có dữ liệu lô hàng.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white">
+        <div className="overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 shadow-sm bg-white">
           <table className="w-full text-sm text-left text-gray-700">
             <thead className="bg-gray-50 text-gray-700 uppercase text-xs font-bold">
               <tr>

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Shipment, { IShipment } from "../models/Shipment";
+import AILog from "../models/AILog";
 import mongoose from "mongoose";
 import User from "../models/User";
 
@@ -181,18 +182,152 @@ export const updateShipmentStatus = async (req: Request, res: Response) => {
     }
 
     // 4. Cập nhật status + transactionHash
+    const oldStatus = shipment.status;
     shipment.status = newStatus;
     shipment.transactionHash = transactionHash.trim();
 
-    await shipment.save();
+    // 5. Thêm mục vào lịch sử trạng thái
+    shipment.statusHistory = shipment.statusHistory || [];
+    shipment.statusHistory.push({
+      fromStatus: oldStatus,
+      toStatus: newStatus,
+      transactionHash: shipment.transactionHash,
+      changedAt: new Date(),
+    });
 
-    // 5. Trả về kết quả
+    await shipment.save();
+    // ===== ANOMALY DETECTION (CROSS-SHIPMENT Z-SCORE) =====
+
+    // transition vừa xảy ra
+    const transitionKey = `${oldStatus}->${newStatus}`;
+    const shipmentsWithTransition = await Shipment.find({
+      "statusHistory.fromStatus": oldStatus,
+      "statusHistory.toStatus": newStatus,
+    }).lean();
+
+    // lấy delta time cho transition này ở mỗi shipment (thời gian từ lúc vào `oldStatus` đến lúc chuyển sang `newStatus`)
+    const deltas: number[] = [];
+
+    shipmentsWithTransition.forEach((s) => {
+      const h = s.statusHistory || [];
+      for (let i = 0; i < h.length; i++) {
+        if (h[i].fromStatus === oldStatus && h[i].toStatus === newStatus) {
+          // tìm thời điểm lô này vào oldStatus: tìm entry trước đó với toStatus === oldStatus, nếu không có dùng createdAt
+          let enteredOldAt: Date | null = null;
+          for (let j = i - 1; j >= 0; j--) {
+            if (h[j].toStatus === oldStatus) {
+              enteredOldAt = new Date(h[j].changedAt);
+              break;
+            }
+          }
+          if (!enteredOldAt) {
+            // fallback: dùng createdAt nếu có
+            if ((s as any).createdAt) enteredOldAt = new Date((s as any).createdAt);
+            else enteredOldAt = new Date(h[i].changedAt); // zero delta
+          }
+
+          const delta = new Date(h[i].changedAt).getTime() - enteredOldAt.getTime();
+          if (!Number.isNaN(delta) && isFinite(delta) && delta >= 0) deltas.push(delta);
+        }
+      }
+    });
+
+    // tính latestDelta cho shipment hiện tại (dựa trên statusHistory vừa push)
+    let latestDelta = 0;
+    try {
+      const hist = shipment.statusHistory || [];
+      const lastIdx = hist.length - 1;
+      if (lastIdx >= 0 && hist[lastIdx].fromStatus === oldStatus && hist[lastIdx].toStatus === newStatus) {
+        // tìm thời điểm nhập oldStatus cho lô hiện tại
+        let enteredOldAt: Date | null = null;
+        for (let j = lastIdx - 1; j >= 0; j--) {
+          if (hist[j].toStatus === oldStatus) {
+            enteredOldAt = new Date(hist[j].changedAt);
+            break;
+          }
+        }
+        if (!enteredOldAt) enteredOldAt = shipment.createdAt || new Date(hist[lastIdx].changedAt);
+        latestDelta = new Date(hist[lastIdx].changedAt).getTime() - enteredOldAt.getTime();
+      }
+    } catch (e) {
+      latestDelta = 0;
+    }
+
+    const TRANSITION_BASELINE: Record<string, number> = {
+      "CREATED->SHIPPED": 30 * 60 * 1000,     // 30 phút
+      "SHIPPED->RECEIVED": 60 * 60 * 1000,     // 1 giờ
+      "RECEIVED->AUDITED": 60 * 60 * 1000,    // 1 giờ
+      "AUDITED->FOR_SALE": 30 * 60 * 1000,    // 30 phút
+    };
+
+
+    // cần ít nhất 3 sample để học
+    if (deltas.length >= 3) {
+      const rawMean = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+      const baseline = TRANSITION_BASELINE[transitionKey] ?? 0;
+      const mean = Math.max(rawMean, baseline);
+      const variance =
+        deltas.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / deltas.length;
+      const std = Math.sqrt(variance);
+      const zScore = std === 0 ? 0 : (latestDelta - mean) / std;
+      const ratio = mean > 0 ? latestDelta / mean : 1;
+
+      let level: "LOW" | "MEDIUM" | "HIGH" = "LOW";
+
+      // ===== PHÂN LEVEL =====
+      if (
+        Math.abs(zScore) >= 2.5 ||
+        ratio < 0.2 ||
+        ratio > 3
+      ) {
+        level = "HIGH";
+      }
+      else if (
+        Math.abs(zScore) >= 0.8 ||
+        ratio < 0.5 ||
+        ratio > 1.8
+      ) {
+        level = "MEDIUM";
+      }
+
+      // ===== CHỈ GHI LOG KHI MEDIUM / HIGH =====
+      if (level !== "LOW") {
+        await AILog.create({
+          shipmentId: shipment.shipmentId,
+          transition: transitionKey,
+          zScore,
+          latestDelta,
+          sampleMean: mean,
+          sampleStd: std,
+          sampleCount: deltas.length,
+          ratio,
+          level,
+          detectedAt: new Date(),
+        });
+      }
+    }
+    // 6. Trả về kết quả
     return res.status(200).json({
       message: "Shipment status updated successfully",
       data: shipment,
     });
   } catch (error: any) {
     return res.status(500).json({ message: error.message || "Server error" });
+  }
+};
+
+export const getAIAlerts = async (req: Request, res: Response) => {
+  try {
+    const alerts = await AILog.find()
+      .sort({ detectedAt: -1 })
+      .limit(5)
+      .lean();
+
+    return res.status(200).json(alerts);
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Cannot fetch AI alerts",
+    });
   }
 };
 
@@ -269,7 +404,6 @@ export const updateShipmentById = async (req: Request, res: Response) => {
   }
 };
 
-
 // Thống kê đơn giản: tổng số lô, số lô ở trạng thái cuối cùng
 export const getShipmentStats = async (req: Request, res: Response) => {
   try {
@@ -280,14 +414,17 @@ export const getShipmentStats = async (req: Request, res: Response) => {
     // Tính toán số liệu thật
     const total = await Shipment.countDocuments({});
     const newThisMonth = await Shipment.countDocuments({ createdAt: { $gte: startOfMonth } });
-    const growth = total > 0 ? ((newThisMonth / total) * 100).toFixed(0) : 0;
+    const growthNumber =
+      total > 0 ? (newThisMonth / total) * 100 : 0;
+
+    const growth = growthNumber.toFixed(0);
 
     const suppliers = (await Shipment.distinct("producerAddress")).length;
-    
+
     const totalTx = await Shipment.countDocuments({ transactionHash: { $exists: true, $ne: "" } });
-    const txToday = await Shipment.countDocuments({ 
-        transactionHash: { $exists: true, $ne: "" },
-        updatedAt: { $gte: startOfToday }
+    const txToday = await Shipment.countDocuments({
+      transactionHash: { $exists: true, $ne: "" },
+      updatedAt: { $gte: startOfToday }
     });
 
     const audited = await Shipment.countDocuments({ status: "AUDITED" });
@@ -296,7 +433,7 @@ export const getShipmentStats = async (req: Request, res: Response) => {
       totalShipments: total,
       productGrowth: `+${growth}% tháng này`,
       activeSuppliers: suppliers,
-      newSuppliersCount: `+${growth > 0 ? 2 : 0} mới tuần này`, // Ví dụ logic
+      newSuppliersCount: `+${growthNumber > 0 ? 2 : 0} mới tuần này`, // Ví dụ logic
       blockchainTransactions: totalTx,
       transactionsToday: `+${txToday} hôm nay`,
       complianceRate: total > 0 ? ((audited / total) * 100).toFixed(1) : "0"
@@ -306,7 +443,7 @@ export const getShipmentStats = async (req: Request, res: Response) => {
   }
 };
 
-export const getBlockchainLogs = async (req, res) => {
+export const getBlockchainLogs = async (req: Request, res: Response) => {
   try {
     const shipments = await Shipment.find();
 
@@ -322,20 +459,21 @@ export const getBlockchainLogs = async (req, res) => {
     });
 
     const walletMap = new Map(
-      users.map(u => [u.walletAddress.toLowerCase(), u.name])
+      users
+        .filter(u => u.walletAddress)
+        .map(u => [u.walletAddress!.toLowerCase(), u.name])
     );
 
     const logs = shipments.flatMap(shipment =>
-      shipment.statusHistory.map((h, index) => ({
+      (shipment.statusHistory ?? []).map((h, index) => ({
         txId: `${shipment.shipmentId}-${index}`,
-        type: h.status,
+        type: h.toStatus,
         from:
           walletMap.get(shipment.producerAddress.toLowerCase()) ??
           shipment.producerAddress,
         to: "Next Actor",
         shipmentId: shipment.shipmentId,
         txHash: h.transactionHash,
-        status: h.status,
         timestamp: h.changedAt,
         gasUsed: 21000
       }))

@@ -4,9 +4,10 @@ export type ShipmentStatus = 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'F
 
 // entry lịch sử trạng thái
 export interface IStatusHistoryEntry {
-  status: ShipmentStatus;
   transactionHash?: string;
   changedAt: Date;
+  fromStatus: ShipmentStatus;
+  toStatus: ShipmentStatus;
 }
 
 export interface IShipment extends Document {
@@ -34,7 +35,12 @@ const statusEnum: ShipmentStatus[] = [
 // Schema con bản ghi lịch sử
 const StatusHistorySchema = new Schema<IStatusHistoryEntry>(
   {
-    status: {
+    fromStatus: {
+      type: String,
+      enum: statusEnum,
+      required: true,
+    },
+    toStatus: {
       type: String,
       enum: statusEnum,
       required: true,

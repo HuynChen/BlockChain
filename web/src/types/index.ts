@@ -6,6 +6,12 @@ export type Shipment = {
   status: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
   transactionHash: string;
   producerAddress: string;
+  statusHistory: Array<{
+    fromStatus: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
+    toStatus: 'CREATED' | 'SHIPPED' | 'RECEIVED' | 'AUDITED' | 'FOR_SALE';
+    transactionHash: string;
+    changedAt: string | Date;
+  }>;
   createdAt: string | Date;
   updatedAt: string | Date;
   ipfsHash?: string;
