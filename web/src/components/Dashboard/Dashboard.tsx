@@ -91,17 +91,45 @@ export const Dashboard: React.FC = () => {
   };
 
   const explainAnomaly = (alert: any) => {
-    const [from, to] = alert.transition.split("->");
+    // ===== Z-SCORE ALERT =====
+    if (alert.engine === "Z_SCORE") {
+      if (!alert.transition) {
+        return {
+          title: "Z-score anomaly",
+          message: "Phát hiện bất thường thời gian",
+          detail: "",
+        };
+      }
 
-    const speed =
-      alert.zScore < 0
-        ? "nhanh bất thường"
-        : "chậm bất thường";
+      const [from, to] = alert.transition.split("->");
 
+      const speed =
+        alert.zScore < 0
+          ? "nhanh bất thường"
+          : "chậm bất thường";
+
+      return {
+        title: `${from} → ${to}`,
+        message: `Thời gian chuyển trạng thái ${speed}`,
+        detail: `Mất ${formatDuration(alert.latestDelta)} (trung bình ${formatDuration(alert.sampleMean)})`,
+      };
+    }
+
+    // ===== ISOLATION FOREST ALERT =====
+    if (alert.engine === "ISOLATION_FOREST") {
+      return {
+        title: "Isolation Forest",
+        message: alert.isAnomaly
+          ? "phát hiện chuỗi thời gian vận hành bất thường so với lịch sử"
+          : "xác nhận chuỗi thời gian vận hành nằm trong vùng bình thường",
+      };
+    }
+
+    // ===== FALLBACK =====
     return {
-      title: `${from} → ${to}`,
-      message: `Thời gian chuyển trạng thái ${speed}`,
-      detail: `Mất ${formatDuration(alert.latestDelta)} (trung bình ${formatDuration(alert.sampleMean)})`,
+      title: "AI Alert",
+      message: "Phát hiện bất thường",
+      detail: "",
     };
   };
 
@@ -239,7 +267,7 @@ export const Dashboard: React.FC = () => {
           {aiAlerts.length === 0 ? (
             <p className="text-sm text-gray-500">Không có bất thường được phát hiện</p>
           ) : (
-            <div className="space-y-4">
+            <div className="max-h-64 overflow-y-auto space-y-4 pr-2">
               {aiAlerts.map((alert, idx) => {
                 const info = explainAnomaly(alert);
                 return (
@@ -267,7 +295,16 @@ export const Dashboard: React.FC = () => {
                       </p>
 
                       <p className="text-[10px] text-gray-400 mt-1">
-                        Z-score: {alert.zScore.toFixed(2)} • {alert.level}
+                        {alert.engine === "Z_SCORE" && (
+                          <>
+                            Z-score: {alert.zScore.toFixed(2)} • {alert.level}
+                          </>
+                        )}
+                        {alert.engine === "ISOLATION_FOREST" && (
+                          <>
+                            Isolation Forest • score: {alert.score?.toFixed(3) ?? "N/A"}
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>

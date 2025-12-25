@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Shipment, { IShipment } from "../models/Shipment";
+import { callIsolationForest } from "../services/aiService";
 import AILog from "../models/AILog";
 import mongoose from "mongoose";
 import User from "../models/User";
@@ -143,6 +144,7 @@ export const getShipmentById = async (req: Request, res: Response) => {
 };
 
 
+const Z_SCORE_THRESHOLD = 2.5;
 
 // Cập nhật trạng thái lô hàng + transactionHash
 export const updateShipmentStatus = async (req: Request, res: Response) => {
@@ -260,6 +262,8 @@ export const updateShipmentStatus = async (req: Request, res: Response) => {
       "AUDITED->FOR_SALE": 30 * 60 * 1000,    // 30 phút
     };
 
+    let zScore: number | null = null;
+    let level: "LOW" | "MEDIUM" | "HIGH" = "LOW";
 
     // cần ít nhất 3 sample để học
     if (deltas.length >= 3) {
@@ -269,10 +273,8 @@ export const updateShipmentStatus = async (req: Request, res: Response) => {
       const variance =
         deltas.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / deltas.length;
       const std = Math.sqrt(variance);
-      const zScore = std === 0 ? 0 : (latestDelta - mean) / std;
+      zScore = std === 0 ? 0 : (latestDelta - mean) / std;
       const ratio = mean > 0 ? latestDelta / mean : 1;
-
-      let level: "LOW" | "MEDIUM" | "HIGH" = "LOW";
 
       // ===== PHÂN LEVEL =====
       if (
@@ -294,6 +296,7 @@ export const updateShipmentStatus = async (req: Request, res: Response) => {
       if (level !== "LOW") {
         await AILog.create({
           shipmentId: shipment.shipmentId,
+          engine: "Z_SCORE",
           transition: transitionKey,
           zScore,
           latestDelta,
@@ -306,6 +309,23 @@ export const updateShipmentStatus = async (req: Request, res: Response) => {
         });
       }
     }
+
+    if (level === "HIGH" && deltas.length >= 5) {
+      try {
+        const aiResult = await callIsolationForest(deltas);
+
+        await AILog.create({
+          shipmentId: shipment.shipmentId,
+          engine: "ISOLATION_FOREST",
+          score: aiResult.anomalyScore,
+          isAnomaly: aiResult.isAnomaly,
+          detectedAt: new Date(),
+        });
+      } catch (err) {
+        console.error("Isolation Forest error:", err);
+      }
+    }
+
     // 6. Trả về kết quả
     return res.status(200).json({
       message: "Shipment status updated successfully",
@@ -332,26 +352,32 @@ export const getAIAlerts = async (req: Request, res: Response) => {
 };
 
 // Cập nhật lô hàng theo id (có thể là _id hoặc shipmentId)
-// Cho phép cập nhật status, transactionHash, ipfsHash
 export const updateShipmentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Lấy dữ liệu từ body (đều là OPTIONAL)
     const {
       status: newStatus,
       transactionHash,
       ipfsHash,
+      documentTxHash,
+      documentType,
     }: {
       status?: IShipment["status"];
       transactionHash?: string;
       ipfsHash?: string;
+      documentTxHash?: string;
+      documentType?: "CERTIFICATE" | "INVOICE" | "SHIPPING_NOTE" | "CONTRACT";
     } = req.body;
 
+    const ALLOWED_DOC_TYPES = ["CERTIFICATE", "INVOICE", "SHIPPING_NOTE", "CONTRACT"];
+    if (documentType && !ALLOWED_DOC_TYPES.includes(documentType)) {
+      return res.status(400).json({ message: "Invalid documentType" });
+    }
+
     // Nếu không có gì để cập nhật thì báo lỗi
-    if (!newStatus && !transactionHash && !ipfsHash) {
+    if (!newStatus && !transactionHash && !ipfsHash && !documentTxHash && !documentType) {
       return res.status(400).json({
-        message: "No fields to update. You can send status, transactionHash or ipfsHash.",
+        message: "No fields to update. You can send status, transactionHash, ipfsHash, documentTxHash or documentType.",
       });
     }
 
@@ -391,6 +417,14 @@ export const updateShipmentById = async (req: Request, res: Response) => {
     // 3. Xử lý ipfsHash (HASH IPFS)
     if (ipfsHash) {
       shipment.ipfsHash = String(ipfsHash).trim();
+    }
+
+    if (documentTxHash && documentTxHash !== shipment.documentTxHash) {
+      shipment.documentTxHash = documentTxHash.trim();
+    }
+
+    if (documentType) {
+      shipment.documentType = documentType;
     }
 
     await shipment.save();

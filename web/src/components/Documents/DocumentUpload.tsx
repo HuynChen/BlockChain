@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Loader2} from 'lucide-react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
+import axios from 'axios';
 import { callAddDocumentHash } from '../../services/blockchainService';
 import { useToast } from '../context/ToastContext';
 
@@ -36,60 +37,71 @@ export const DocumentUpload: React.FC<Props> = ({ shipmentId, onSuccess }) => {
     setLoading(true);
 
     try {
+      // ===== 1. Upload file lên IPFS =====
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadRes = await fetch(`${API_BASE}/ipfs/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const text = await uploadRes.text().catch(() => "");
-      if (!uploadRes.ok) {
-        throw new Error(`Upload IPFS thất bại: ${text}`);
+      let uploadData: any = {};
+      try {
+        const res = await axios.post(`${API_BASE}/ipfs/upload`, formData);
+        uploadData = res.data || {};
+      } catch (err: any) {
+        const errMsg = err?.response?.data
+          ? JSON.stringify(err.response.data)
+          : err.message;
+        throw new Error(`Upload IPFS thất bại: ${errMsg}`);
       }
 
-      const data = JSON.parse(text || "{}");
-      const cid = data.cid || data.IpfsHash || data.hash;
+      const cid = uploadData.cid || uploadData.IpfsHash || uploadData.hash;
       if (!cid) throw new Error("Server không trả về CID");
 
-      const updateRes = await fetch(`${API_BASE}/shipments/${shipmentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ipfsHash: cid }),
-      });
+      console.log("IPFS CID:", cid);
 
-      if (!updateRes.ok) {
-        const upText = await updateRes.text().catch(() => "");
-        throw new Error(`Cập nhật shipment thất bại: ${upText}`);
-      }
-      console.log("Upload lên IPFS thành công, CID:", cid);
+      // ===== 2. Tính hash file local =====
       console.log("Đang tính hash file...");
-      const hash = await computeFileHash(file);
-      console.log("Generated Hash:", hash);
+      const fileHash = await computeFileHash(file);
+      console.log("Generated Hash:", fileHash);
 
+      // ===== 3. GHI BLOCKCHAIN TRƯỚC =====
       showToast("Đang mở ví MetaMask...", "pending");
 
       const tx = await callAddDocumentHash({
-        shipmentId: shipmentId,
-        fileHash: hash,
-        docType: docType
+        shipmentId,
+        fileHash,
+        docType,
       });
 
-      if (tx) {
-        showToast("Giao dịch đã gửi! Đang chờ xác nhận...", "pending", tx.hash);
-        await tx.wait();
+      if (!tx) throw new Error("Không gửi được giao dịch");
 
-        showToast("Lưu tài liệu lên Blockchain thành công!", "success", tx.hash);
+      showToast("Giao dịch đã gửi! Đang chờ xác nhận...", "pending", tx.hash);
+      await tx.wait();
 
-        setFile(null);
-        if (onSuccess) onSuccess();
+      showToast("Ghi hash lên Blockchain thành công!", "success", tx.hash);
+
+      // ===== 4. SAU KHI BLOCKCHAIN OK → LƯU DB =====
+      try {
+        await axios.put(`${API_BASE}/shipments/${shipmentId}`, {
+          ipfsHash: cid,
+          documentTxHash: tx.hash,
+          documentType: docType,
+        });
+      } catch (err: any) {
+        const errMsg = err?.response?.data
+          ? JSON.stringify(err.response.data)
+          : err.message;
+        throw new Error(`Blockchain OK nhưng lưu DB thất bại: ${errMsg}`);
       }
+
+      setFile(null);
+      onSuccess?.();
 
     } catch (err: any) {
       console.error(err);
       let msg = err.message || "Lỗi tải tài liệu";
-      if (msg.includes("rejected")) msg = "Bạn đã hủy giao dịch.";
+
+      if (msg.includes("rejected")) {
+        msg = "Bạn đã hủy giao dịch.";
+      }
 
       showToast(msg, "error");
     } finally {
